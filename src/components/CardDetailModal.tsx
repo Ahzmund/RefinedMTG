@@ -87,13 +87,26 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
           ) : cardDetails ? (
             <>
               {showImage && cardDetails.largeImageUrl ? (
-                <View style={styles.imageContainer}>
-                  <Image
-                    source={{ uri: cardDetails.largeImageUrl }}
-                    style={styles.cardImage}
-                    resizeMode="contain"
-                  />
-                </View>
+                <>
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: cardDetails.largeImageUrl }}
+                      style={styles.cardImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  {/* Large close button for image mode */}
+                  <Pressable 
+                    style={({ pressed }) => [
+                      styles.largeCloseButton,
+                      pressed && styles.largeCloseButtonPressed,
+                    ]}
+                    onPress={onClose}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#fff" />
+                    <Text style={styles.largeCloseButtonText}>Close</Text>
+                  </Pressable>
+                </>
               ) : (
                 <View style={styles.textDetails}>
                   <Text style={styles.cardName}>{cardDetails.name}</Text>

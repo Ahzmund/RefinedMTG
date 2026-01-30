@@ -320,22 +320,36 @@ export const applyDeckChanges = async (
       }
     }
     
-    // Create changelog
-    const changelogCardsAdded = changes.cardsToAdd.map(card => ({
-      name: card.name,
-      typeLine: card.typeLine,
-      manaCost: card.manaCost,
-      quantity: card.quantity,
-      reasoning: card.reasoning,
-    }));
+    // Create changelog - need to get card IDs for each card
+    const changelogCardsAdded = await Promise.all(
+      changes.cardsToAdd.map(async (card) => {
+        const cardRecord = await getOrCreateCard({
+          name: card.name,
+          typeLine: card.typeLine,
+          manaCost: card.manaCost,
+        });
+        return {
+          cardId: cardRecord.id,
+          quantity: card.quantity,
+          reasoning: card.reasoning,
+        };
+      })
+    );
     
-    const changelogCardsRemoved = changes.cardsToRemove.map(card => ({
-      name: card.name,
-      typeLine: card.typeLine,
-      manaCost: card.manaCost,
-      quantity: card.quantity,
-      reasoning: card.reasoning,
-    }));
+    const changelogCardsRemoved = await Promise.all(
+      changes.cardsToRemove.map(async (card) => {
+        const cardRecord = await getOrCreateCard({
+          name: card.name,
+          typeLine: card.typeLine,
+          manaCost: card.manaCost,
+        });
+        return {
+          cardId: cardRecord.id,
+          quantity: card.quantity,
+          reasoning: card.reasoning,
+        };
+      })
+    );
     
     await createChangelog(
       deckId,
