@@ -5,7 +5,7 @@ import SimpleToast from './SimpleToast';
 import { ChangeHistoryItem as ChangeHistoryType } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { deleteChangelog } from '../database/changelogService';
+import { deleteChangelog, updateChangelogDescription } from '../database/changelogService';
 
 interface ChangeHistoryItemProps {
   change: ChangeHistoryType;
@@ -41,9 +41,7 @@ const ChangeHistoryItem: React.FC<ChangeHistoryItemProps> = ({ change, deckId })
   const handleSaveDescription = async () => {
     setIsUpdating(true);
     try {
-      await apiClient.put(`/api/decks/changes/${change.id}/description`, {
-        description,
-      });
+      await updateChangelogDescription(change.id, description);
       setIsEditing(false);
       queryClient.invalidateQueries({ queryKey: ['deck', deckId] });
     } catch (error: any) {
