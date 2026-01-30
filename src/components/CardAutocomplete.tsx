@@ -59,15 +59,7 @@ const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
         } else {
           // Search Scryfall for additions
           const results = await searchCards(searchQuery);
-          setSuggestions(
-            results?.cards?.map((c: any) => ({
-              id: c.id,
-              name: c.name,
-              typeLine: c.typeLine,
-              manaCost: c.manaCost,
-              cmc: c.cmc,
-            })) ?? []
-          );
+          setSuggestions(results ?? []);
         }
       } catch (error) {
         console.error('Search error:', error);
