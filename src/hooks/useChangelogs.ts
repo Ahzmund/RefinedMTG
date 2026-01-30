@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createChangelog, updateChangelogDescription, deleteChangelog, ChangelogCardInput } from '../database/changelogService';
-import { applyDeckChanges } from '../services/deckService';
+import { applyDeckChanges } from '../database/deckService';
 
 export const useCreateChangelog = () => {
   const queryClient = useQueryClient();
