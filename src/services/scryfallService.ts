@@ -16,6 +16,16 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard |
     }
 
     const data = await response.json();
+    
+    // Debug: Log raw API response
+    console.log('Scryfall API raw response for', cardName, ':', JSON.stringify({
+      oracle_text: data.oracle_text,
+      power: data.power,
+      toughness: data.toughness,
+      loyalty: data.loyalty,
+      defense: data.defense,
+    }, null, 2));
+    
     return {
       id: data.id,
       name: data.name,
