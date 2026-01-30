@@ -38,6 +38,7 @@ export interface DeckCard {
   cardId: string;
   quantity: number;
   isCommander: boolean;
+  isSideboard: boolean;
   addedAt: number;
   card?: Card;
 }

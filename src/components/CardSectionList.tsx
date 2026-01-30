@@ -11,17 +11,29 @@ interface CardSectionListProps {
 }
 
 const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, onCardLongPress }) => {
-  // Separate commanders from other cards
+  // Separate commanders, sideboard, and mainboard cards
   const commanders = cards?.filter(card => card.isCommander === true) ?? [];
-  const nonCommanderCards = cards?.filter(card => card.isCommander !== true) ?? [];
+  const sideboardCards = cards?.filter(card => card.isSideboard === true && card.isCommander !== true) ?? [];
+  const mainboardCards = cards?.filter(card => card.isCommander !== true && card.isSideboard !== true) ?? [];
   
-  // Get sections for non-commander cards
-  const cardSections = cardTypeToSectionData(nonCommanderCards);
+  // Get sections for mainboard cards
+  const mainboardSections = cardTypeToSectionData(mainboardCards);
   
-  // Add commander section at the top if commanders exist
-  const sections = commanders.length > 0
-    ? [{ title: 'Commander', data: commanders }, ...cardSections]
-    : cardSections;
+  // Build sections: Command Zone → Mainboard → Sideboard
+  let sections = [];
+  
+  // Add Command Zone section if commanders exist
+  if (commanders.length > 0) {
+    sections.push({ title: 'Command Zone', data: commanders });
+  }
+  
+  // Add mainboard sections
+  sections = [...sections, ...mainboardSections];
+  
+  // Add Sideboard section if sideboard cards exist
+  if (sideboardCards.length > 0) {
+    sections.push({ title: 'Sideboard', data: sideboardCards });
+  }
 
   const renderCard = ({ item }: { item: CardEntity }) => (
     <Pressable

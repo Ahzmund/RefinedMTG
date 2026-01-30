@@ -17,7 +17,7 @@ export const importDeckFromDecklist = async (
   commanders?: string[]
 ): Promise<ImportResult> => {
   // Parse the decklist
-  const parsedCards = parseDecklist(decklist);
+  const parsed = parseDecklist(decklist);
   
   // Create the deck
   const deckId = await createDeck(deckName, folderId, 'manual');
@@ -27,10 +27,17 @@ export const importDeckFromDecklist = async (
     await addCommandersToDeck(deckId, commanders);
   }
   
-  // Import cards
-  const result = await importCardsToNewDeck(deckId, parsedCards);
+  // Import mainboard cards
+  const mainboardResult = await importCardsToNewDeck(deckId, parsed.mainboard);
   
-  return result;
+  // Import sideboard cards
+  const sideboardResult = await importCardsToNewDeck(deckId, parsed.sideboard);
+  
+  return {
+    deckId,
+    successCount: mainboardResult.successCount + sideboardResult.successCount,
+    failedCards: [...mainboardResult.failedCards, ...sideboardResult.failedCards],
+  };
 };
 
 export const importDeckFromMoxfield = async (
@@ -77,7 +84,7 @@ const importCardsToNewDeck = async (
       const card = await getOrCreateCard(parsedCard.name);
       
       if (card) {
-        await addCardToDeck(deckId, card.id, parsedCard.quantity);
+        await addCardToDeck(deckId, card.id, parsedCard.quantity, false, parsedCard.isSideboard || false);
         successfulCards.push({
           cardId: card.id,
           name: card.name,

@@ -46,6 +46,15 @@ const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
       await db.execAsync('ALTER TABLE cards ADD COLUMN large_image_url TEXT');
     }
     
+    // Check if is_sideboard column exists in deck_cards table
+    const deckCardsInfo = await db.getAllAsync<any>('PRAGMA table_info(deck_cards)');
+    const deckCardsColumns = deckCardsInfo.map((col: any) => col.name);
+    
+    if (!deckCardsColumns.includes('is_sideboard')) {
+      console.log('Adding is_sideboard column to deck_cards table...');
+      await db.execAsync('ALTER TABLE deck_cards ADD COLUMN is_sideboard INTEGER DEFAULT 0');
+    }
+    
     console.log('Migrations completed successfully');
   } catch (error) {
     console.error('Error running migrations:', error);

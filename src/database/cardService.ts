@@ -105,7 +105,8 @@ export const addCardToDeck = async (
   deckId: string,
   cardId: string,
   quantity: number,
-  isCommander: boolean = false
+  isCommander: boolean = false,
+  isSideboard: boolean = false
 ): Promise<void> => {
   try {
     const db = getDatabase();
@@ -127,9 +128,9 @@ export const addCardToDeck = async (
     } else {
       // Insert new
       await db.runAsync(
-        `INSERT INTO deck_cards (id, deck_id, card_id, quantity, is_commander, added_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, deckId, cardId, quantity, isCommander ? 1 : 0, now]
+        `INSERT INTO deck_cards (id, deck_id, card_id, quantity, is_commander, is_sideboard, added_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, deckId, cardId, quantity, isCommander ? 1 : 0, isSideboard ? 1 : 0, now]
       );
     }
 

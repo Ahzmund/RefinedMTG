@@ -75,7 +75,7 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
     const cardRows = await db.getAllAsync<any>(
       `SELECT 
         dc.id, dc.deck_id as deckId, dc.card_id as cardId, dc.quantity,
-        dc.is_commander as isCommander, dc.added_at as addedAt,
+        dc.is_commander as isCommander, dc.is_sideboard as isSideboard, dc.added_at as addedAt,
         c.name, c.mana_cost as manaCost, c.type_line as typeLine,
         c.card_type as cardType, c.image_uri as imageUri, c.oracle_text as oracleText,
         c.power, c.toughness, c.loyalty, c.defense, c.large_image_url as largeImageUrl,
@@ -170,6 +170,7 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
       cardId: row.cardId,
       quantity: row.quantity,
       isCommander: Boolean(row.isCommander),
+      isSideboard: Boolean(row.isSideboard),
       addedAt: row.addedAt,
       card: {
         id: row.cardId,

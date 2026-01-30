@@ -21,6 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import SimpleToast from '../components/SimpleToast';
 import MoxfieldWebViewImporter from '../components/MoxfieldWebViewImporter';
 import { MoxfieldDeckData } from '../services/moxfieldService';
+import CardAutocomplete from '../components/CardAutocomplete';
 
 type CreationMethod = 'empty' | 'moxfield' | 'decklist';
 
@@ -283,20 +284,20 @@ const ImportDeckModal: React.FC = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Command Zone (Optional)</Text>
               <Text style={styles.helperText}>Add up to 2 commanders (legendary creatures/planeswalkers)</Text>
-              <TextInput
-                style={styles.input}
+              <CardAutocomplete
                 value={commander1}
                 onChangeText={setCommander1}
+                onSelectCard={(card) => setCommander1(card.name)}
                 placeholder="Commander 1 (e.g., Atraxa, Praetors' Voice)"
-                placeholderTextColor="#999"
               />
-              <TextInput
-                style={[styles.input, { marginTop: 8 }]}
-                value={commander2}
-                onChangeText={setCommander2}
-                placeholder="Commander 2 (optional, for Partner)"
-                placeholderTextColor="#999"
-              />
+              <View style={{ marginTop: 8 }}>
+                <CardAutocomplete
+                  value={commander2}
+                  onChangeText={setCommander2}
+                  onSelectCard={(card) => setCommander2(card.name)}
+                  placeholder="Commander 2 (optional, for Partner)"
+                />
+              </View>
             </View>
           )}
 

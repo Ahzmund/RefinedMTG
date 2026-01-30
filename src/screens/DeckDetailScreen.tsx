@@ -44,6 +44,30 @@ const DeckDetailScreen: React.FC = () => {
     }, [refetch])
   );
 
+  // Auto-fetch missing card details when deck loads
+  useEffect(() => {
+    if (deck?.cards) {
+      const fetchMissingDetails = async () => {
+        const { fetchAndUpdateCardDetails } = await import('../database/cardService');
+        
+        for (const deckCard of deck.cards) {
+          if (deckCard.card && !deckCard.card.oracleText) {
+            try {
+              await fetchAndUpdateCardDetails(deckCard.card.id);
+            } catch (error) {
+              console.error(`Failed to fetch details for ${deckCard.card.name}:`, error);
+            }
+          }
+        }
+        
+        // Refetch deck to get updated card details
+        refetch();
+      };
+      
+      fetchMissingDetails();
+    }
+  }, [deck?.id]); // Only run when deck ID changes
+
   const handleAddChange = () => {
     navigation.navigate('ChangeEntry', { deckId, deckName });
   };
