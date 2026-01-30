@@ -87,7 +87,7 @@ const ChangeEntryScreen: React.FC = () => {
     setSelectedRemoveCard(card);
   };
 
-  const handleAddCard = () => {
+  const handleAddCard = async () => {
     if (!selectedAddCard) {
       Alert.alert('Error', 'Please select a card');
       return;
@@ -99,11 +99,28 @@ const ChangeEntryScreen: React.FC = () => {
       return;
     }
 
+    // Fetch full card details from Scryfall if not already populated
+    let typeLine = selectedAddCard.typeLine;
+    let manaCost = selectedAddCard.manaCost;
+    
+    if (!typeLine || !manaCost) {
+      try {
+        const { searchCardByName } = await import('../services/scryfallService');
+        const fullCard = await searchCardByName(selectedAddCard.name);
+        if (fullCard) {
+          typeLine = fullCard.type_line || '';
+          manaCost = fullCard.mana_cost || '';
+        }
+      } catch (error) {
+        console.error('Error fetching card details:', error);
+      }
+    }
+
     const newCard: CardInput = {
       id: Date.now().toString(),
       name: selectedAddCard.name,
-      typeLine: selectedAddCard.typeLine,
-      manaCost: selectedAddCard.manaCost,
+      typeLine,
+      manaCost,
       quantity,
       reasoning: addCardReasoning.trim(),
     };

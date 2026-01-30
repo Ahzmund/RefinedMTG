@@ -235,9 +235,30 @@ const DeckDetailScreen: React.FC = () => {
               <Text style={styles.emptySubtext}>Track your deck changes over time</Text>
             </View>
           ) : (
-            (deck.changelogs || []).map((change) => (
-              <ChangeHistoryItem key={change.id} change={change} deckId={deckId} />
-            ))
+            (deck.changelogs || []).map((change) => {
+              // Transform Changelog to ChangeHistoryItem format
+              const transformedChange = {
+                id: change.id,
+                changeDate: change.changeDate,
+                description: change.description,
+                isImportError: change.isImportError,
+                cardsAdded: (change.cardsAdded || []).map(cc => ({
+                  name: cc.card?.name || 'Unknown',
+                  quantity: cc.quantity,
+                  reasoning: cc.reasoning,
+                  typeLine: cc.card?.typeLine,
+                  manaCost: cc.card?.manaCost,
+                })),
+                cardsRemoved: (change.cardsRemoved || []).map(cc => ({
+                  name: cc.card?.name || 'Unknown',
+                  quantity: cc.quantity,
+                  reasoning: cc.reasoning,
+                  typeLine: cc.card?.typeLine,
+                  manaCost: cc.card?.manaCost,
+                })),
+              };
+              return <ChangeHistoryItem key={change.id} change={transformedChange} deckId={deckId} />;
+            })
           )}
         </ScrollView>
       )}
