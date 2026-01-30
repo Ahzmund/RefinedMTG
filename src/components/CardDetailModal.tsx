@@ -31,6 +31,11 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({
   onClose,
 }) => {
   if (!visible) return null;
+  
+  // Debug logging
+  if (cardDetails) {
+    console.log('CardDetailModal - cardDetails:', JSON.stringify(cardDetails, null, 2));
+  }
 
   const renderStats = () => {
     if (!cardDetails) return null;

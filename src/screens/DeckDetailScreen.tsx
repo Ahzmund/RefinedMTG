@@ -81,6 +81,7 @@ const DeckDetailScreen: React.FC = () => {
           const updatedCard = await fetchAndUpdateCardDetails(deckCard.card.id, deckCard.card.name);
           
           if (updatedCard) {
+            console.log('Fetched card from Scryfall:', JSON.stringify(updatedCard, null, 2));
             setSelectedCard({
               name: updatedCard.name,
               typeLine: updatedCard.typeLine || '',
