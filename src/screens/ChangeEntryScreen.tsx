@@ -66,12 +66,12 @@ const ChangeEntryScreen: React.FC = () => {
 
   // Convert deck cards to suggestion format for removal autocomplete
   const deckCardSuggestions = useMemo<CardSuggestion[]>(() => {
-    if (!deck?.currentCards) return [];
-    return deck.currentCards.map((card) => ({
-      id: card.id || '',
-      name: card.name || '',
-      typeLine: card.typeLine || '',
-      manaCost: card.manaCost || '',
+    if (!deck?.cards) return [];
+    return deck.cards.map((deckCard) => ({
+      id: deckCard.card?.id || '',
+      name: deckCard.card?.name || '',
+      typeLine: deckCard.card?.typeLine || '',
+      manaCost: deckCard.card?.manaCost || '',
       cmc: 0,
     }));
   }, [deck]);
@@ -367,8 +367,15 @@ const ChangeEntryScreen: React.FC = () => {
           {/* Bottom half - Current decklist */}
           <View style={styles.bottomHalf}>
             <Text style={styles.decklistTitle}>Current Decklist</Text>
-            {deck?.currentCards ? (
-              <CardSectionList cards={deck.currentCards} onCardPress={handleCardPress} />
+            {deck?.cards ? (
+              <CardSectionList cards={deck.cards.map(dc => ({
+                name: dc.card?.name || 'Unknown',
+                typeLine: dc.card?.typeLine || '',
+                manaCost: dc.card?.manaCost || '',
+                quantity: dc.quantity,
+                isCommander: dc.isCommander,
+                cardType: dc.card?.cardType || 'Other',
+              }))} onCardPress={handleCardPress} />
             ) : (
               <ActivityIndicator size="large" color="#6200ee" style={styles.loader} />
             )}
