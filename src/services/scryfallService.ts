@@ -21,6 +21,11 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard |
       name: data.name,
       mana_cost: data.mana_cost,
       type_line: data.type_line,
+      oracle_text: data.oracle_text,
+      power: data.power,
+      toughness: data.toughness,
+      loyalty: data.loyalty,
+      defense: data.defense,
       image_uris: data.image_uris,
     };
   } catch (error) {
