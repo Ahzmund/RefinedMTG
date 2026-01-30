@@ -4,6 +4,55 @@ const DB_NAME = 'refinedmtg.db';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
+const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+  try {
+    // Check if new columns exist in cards table
+    const tableInfo = await db.getAllAsync<any>('PRAGMA table_info(cards)');
+    const columnNames = tableInfo.map((col: any) => col.name);
+    
+    // Add oracle_text column if it doesn't exist
+    if (!columnNames.includes('oracle_text')) {
+      console.log('Adding oracle_text column to cards table...');
+      await db.execAsync('ALTER TABLE cards ADD COLUMN oracle_text TEXT');
+    }
+    
+    // Add power column if it doesn't exist
+    if (!columnNames.includes('power')) {
+      console.log('Adding power column to cards table...');
+      await db.execAsync('ALTER TABLE cards ADD COLUMN power TEXT');
+    }
+    
+    // Add toughness column if it doesn't exist
+    if (!columnNames.includes('toughness')) {
+      console.log('Adding toughness column to cards table...');
+      await db.execAsync('ALTER TABLE cards ADD COLUMN toughness TEXT');
+    }
+    
+    // Add loyalty column if it doesn't exist
+    if (!columnNames.includes('loyalty')) {
+      console.log('Adding loyalty column to cards table...');
+      await db.execAsync('ALTER TABLE cards ADD COLUMN loyalty TEXT');
+    }
+    
+    // Add defense column if it doesn't exist
+    if (!columnNames.includes('defense')) {
+      console.log('Adding defense column to cards table...');
+      await db.execAsync('ALTER TABLE cards ADD COLUMN defense TEXT');
+    }
+    
+    // Add large_image_url column if it doesn't exist
+    if (!columnNames.includes('large_image_url')) {
+      console.log('Adding large_image_url column to cards table...');
+      await db.execAsync('ALTER TABLE cards ADD COLUMN large_image_url TEXT');
+    }
+    
+    console.log('Migrations completed successfully');
+  } catch (error) {
+    console.error('Error running migrations:', error);
+    throw error;
+  }
+};
+
 export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
   try {
     if (db) {
@@ -94,6 +143,10 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
       CREATE INDEX IF NOT EXISTS idx_cards_scryfall ON cards(scryfall_id);
     `);
 
+    // Run migrations for existing databases
+    console.log('Running database migrations...');
+    await runMigrations(db);
+    
     console.log('Database initialized successfully');
     return db;
   } catch (error) {
