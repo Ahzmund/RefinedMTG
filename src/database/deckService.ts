@@ -77,7 +77,9 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
         dc.id, dc.deck_id as deckId, dc.card_id as cardId, dc.quantity,
         dc.is_commander as isCommander, dc.added_at as addedAt,
         c.name, c.mana_cost as manaCost, c.type_line as typeLine,
-        c.card_type as cardType, c.image_uri as imageUri, c.created_at as cardCreatedAt
+        c.card_type as cardType, c.image_uri as imageUri, c.oracle_text as oracleText,
+        c.power, c.toughness, c.loyalty, c.defense, c.large_image_url as largeImageUrl,
+        c.created_at as cardCreatedAt
       FROM deck_cards dc
       JOIN cards c ON dc.card_id = c.id
       WHERE dc.deck_id = ?
@@ -176,6 +178,12 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
         typeLine: row.typeLine,
         cardType: row.cardType,
         imageUri: row.imageUri,
+        oracleText: row.oracleText,
+        power: row.power,
+        toughness: row.toughness,
+        loyalty: row.loyalty,
+        defense: row.defense,
+        largeImageUrl: row.largeImageUrl,
         createdAt: row.cardCreatedAt || 0,
       },
     }));
@@ -217,6 +225,134 @@ export const updateDeckName = async (deckId: string, name: string): Promise<void
     );
   } catch (error) {
     console.error('Error in updateDeckName:', error);
+    throw error;
+  }
+};
+
+export const applyDeckChanges = async (
+  deckId: string,
+  changes: {
+    changeDate: string;
+    description?: string;
+    cardsToAdd: Array<{
+      name: string;
+      typeLine: string;
+      manaCost: string;
+      quantity: number;
+      reasoning?: string;
+    }>;
+    cardsToRemove: Array<{
+      name: string;
+      typeLine: string;
+      manaCost: string;
+      quantity: number;
+      reasoning?: string;
+    }>;
+  }
+): Promise<void> => {
+  try {
+    const db = getDatabase();
+    const { createChangelog } = require('./changelogService');
+    const { getOrCreateCard } = require('./cardService');
+    
+    // Process cards to remove
+    for (const cardToRemove of changes.cardsToRemove) {
+      const card = await getOrCreateCard({
+        name: cardToRemove.name,
+        typeLine: cardToRemove.typeLine,
+        manaCost: cardToRemove.manaCost,
+      });
+      
+      // Get current quantity
+      const currentDeckCard = await db.getFirstAsync<any>(
+        'SELECT quantity FROM deck_cards WHERE deck_id = ? AND card_id = ?',
+        [deckId, card.id]
+      );
+      
+      if (currentDeckCard) {
+        const newQuantity = currentDeckCard.quantity - cardToRemove.quantity;
+        
+        if (newQuantity <= 0) {
+          // Remove card entirely
+          await db.runAsync(
+            'DELETE FROM deck_cards WHERE deck_id = ? AND card_id = ?',
+            [deckId, card.id]
+          );
+        } else {
+          // Update quantity
+          await db.runAsync(
+            'UPDATE deck_cards SET quantity = ? WHERE deck_id = ? AND card_id = ?',
+            [newQuantity, deckId, card.id]
+          );
+        }
+      }
+    }
+    
+    // Process cards to add
+    for (const cardToAdd of changes.cardsToAdd) {
+      const card = await getOrCreateCard({
+        name: cardToAdd.name,
+        typeLine: cardToAdd.typeLine,
+        manaCost: cardToAdd.manaCost,
+      });
+      
+      // Check if card already exists in deck
+      const existingDeckCard = await db.getFirstAsync<any>(
+        'SELECT id, quantity FROM deck_cards WHERE deck_id = ? AND card_id = ?',
+        [deckId, card.id]
+      );
+      
+      if (existingDeckCard) {
+        // Update quantity
+        const newQuantity = existingDeckCard.quantity + cardToAdd.quantity;
+        await db.runAsync(
+          'UPDATE deck_cards SET quantity = ? WHERE id = ?',
+          [newQuantity, existingDeckCard.id]
+        );
+      } else {
+        // Insert new deck card
+        const deckCardId = uuid.v4() as string;
+        const now = Date.now();
+        await db.runAsync(
+          'INSERT INTO deck_cards (id, deck_id, card_id, quantity, is_commander, added_at) VALUES (?, ?, ?, ?, ?, ?)',
+          [deckCardId, deckId, card.id, cardToAdd.quantity, false, now]
+        );
+      }
+    }
+    
+    // Create changelog
+    const changelogCardsAdded = changes.cardsToAdd.map(card => ({
+      name: card.name,
+      typeLine: card.typeLine,
+      manaCost: card.manaCost,
+      quantity: card.quantity,
+      reasoning: card.reasoning,
+    }));
+    
+    const changelogCardsRemoved = changes.cardsToRemove.map(card => ({
+      name: card.name,
+      typeLine: card.typeLine,
+      manaCost: card.manaCost,
+      quantity: card.quantity,
+      reasoning: card.reasoning,
+    }));
+    
+    await createChangelog(
+      deckId,
+      changes.description || '',
+      changelogCardsAdded,
+      changelogCardsRemoved,
+      false
+    );
+    
+    // Update deck's updated_at timestamp
+    const now = Date.now();
+    await db.runAsync(
+      'UPDATE decks SET updated_at = ? WHERE id = ?',
+      [now, deckId]
+    );
+  } catch (error) {
+    console.error('Error in applyDeckChanges:', error);
     throw error;
   }
 };

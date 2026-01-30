@@ -23,6 +23,12 @@ export interface Card {
   typeLine?: string;
   cardType?: string;
   imageUri?: string;
+  oracleText?: string;
+  power?: string;
+  toughness?: string;
+  loyalty?: string;
+  defense?: string;
+  largeImageUrl?: string;
   createdAt: number;
 }
 
@@ -67,9 +73,15 @@ export interface ScryfallCard {
   name: string;
   mana_cost?: string;
   type_line?: string;
+  oracle_text?: string;
+  power?: string;
+  toughness?: string;
+  loyalty?: string;
+  defense?: string;
   image_uris?: {
     normal?: string;
     small?: string;
+    large?: string;
   };
 }
 
@@ -120,4 +132,32 @@ export interface CardEntity {
   quantity: number;
   cardType: CardType;
   isCommander?: boolean;
+}
+
+export interface CardDetails {
+  name: string;
+  typeLine: string;
+  manaCost?: string;
+  oracleText?: string;
+  power?: string;
+  toughness?: string;
+  loyalty?: string;
+  defense?: string;
+  largeImageUrl?: string;
+  cardFaces?: Array<{
+    name: string;
+    typeLine: string;
+    oracleText?: string;
+    power?: string;
+    toughness?: string;
+    loyalty?: string;
+  }>;
+}
+
+export interface CardChangeItemDto {
+  name: string;
+  typeLine: string;
+  manaCost: string;
+  quantity: number;
+  reasoning?: string;
 }

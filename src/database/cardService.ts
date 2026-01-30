@@ -3,7 +3,8 @@ import { Card } from '../types';
 import { searchCardByName, parseCardType } from '../services/scryfallService';
 import uuid from 'react-native-uuid';
 
-export const getOrCreateCard = async (cardName: string): Promise<Card | null> => {
+export const getOrCreateCard = async (cardInput: string | { name: string; typeLine: string; manaCost: string }): Promise<Card | null> => {
+  const cardName = typeof cardInput === 'string' ? cardInput : cardInput.name;
   try {
     const db = getDatabase();
     
@@ -26,6 +27,28 @@ export const getOrCreateCard = async (cardName: string): Promise<Card | null> =>
       };
     }
 
+    // If we have full card details, use them without fetching
+    if (typeof cardInput === 'object') {
+      const id = uuid.v4() as string;
+      const now = Date.now();
+      const cardType = parseCardType(cardInput.typeLine);
+      
+      await db.runAsync(
+        `INSERT INTO cards (id, name, mana_cost, type_line, card_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, cardInput.name, cardInput.manaCost || null, cardInput.typeLine || null, cardType, now]
+      );
+      
+      return {
+        id,
+        name: cardInput.name,
+        manaCost: cardInput.manaCost,
+        typeLine: cardInput.typeLine,
+        cardType,
+        createdAt: now,
+      };
+    }
+    
     // Fetch from Scryfall
     const scryfallCard = await searchCardByName(cardName);
     
@@ -39,9 +62,11 @@ export const getOrCreateCard = async (cardName: string): Promise<Card | null> =>
     const cardType = parseCardType(scryfallCard.type_line || '');
     const imageUri = scryfallCard.image_uris?.normal || scryfallCard.image_uris?.small;
 
+    const largeImageUrl = scryfallCard.image_uris?.large || scryfallCard.image_uris?.normal;
+    
     await db.runAsync(
-      `INSERT INTO cards (id, scryfall_id, name, mana_cost, type_line, card_type, image_uri, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO cards (id, scryfall_id, name, mana_cost, type_line, card_type, image_uri, oracle_text, power, toughness, loyalty, defense, large_image_url, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         scryfallCard.id,
@@ -50,6 +75,12 @@ export const getOrCreateCard = async (cardName: string): Promise<Card | null> =>
         scryfallCard.type_line || null,
         cardType,
         imageUri || null,
+        scryfallCard.oracle_text || null,
+        scryfallCard.power || null,
+        scryfallCard.toughness || null,
+        scryfallCard.loyalty || null,
+        scryfallCard.defense || null,
+        largeImageUrl || null,
         now,
       ]
     );

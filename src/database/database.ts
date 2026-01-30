@@ -45,6 +45,12 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
         type_line TEXT,
         card_type TEXT,
         image_uri TEXT,
+        oracle_text TEXT,
+        power TEXT,
+        toughness TEXT,
+        loyalty TEXT,
+        defense TEXT,
+        large_image_url TEXT,
         created_at INTEGER NOT NULL
       );
 

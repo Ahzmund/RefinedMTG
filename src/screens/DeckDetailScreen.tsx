@@ -69,8 +69,23 @@ const DeckDetailScreen: React.FC = () => {
     setIsLoadingCardDetails(true);
     setShowCardModal(true);
     
-    // Use card data already available from database
-    setSelectedCard(card as any);
+    // Find the full card data from deck.cards
+    const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
+    if (deckCard?.card) {
+      setSelectedCard({
+        name: deckCard.card.name,
+        typeLine: deckCard.card.typeLine || '',
+        manaCost: deckCard.card.manaCost,
+        oracleText: deckCard.card.oracleText,
+        power: deckCard.card.power,
+        toughness: deckCard.card.toughness,
+        loyalty: deckCard.card.loyalty,
+        defense: deckCard.card.defense,
+        largeImageUrl: deckCard.card.largeImageUrl,
+      });
+    } else {
+      setSelectedCard(card as any);
+    }
     setIsLoadingCardDetails(false);
   };
 
