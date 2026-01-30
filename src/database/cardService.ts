@@ -177,3 +177,78 @@ export const removeCardFromDeck = async (deckId: string, cardId: string, quantit
     throw error;
   }
 };
+
+
+export const fetchAndUpdateCardDetails = async (cardId: string, cardName: string): Promise<Card | null> => {
+  try {
+    const db = getDatabase();
+    
+    // Fetch full card details from Scryfall
+    const scryfallCard = await searchCardByName(cardName);
+    
+    if (!scryfallCard) {
+      console.warn(`Card not found on Scryfall: ${cardName}`);
+      return null;
+    }
+    
+    // Update the card in database with full details
+    const imageUri = scryfallCard.image_uris?.normal || scryfallCard.image_uris?.small;
+    const largeImageUrl = scryfallCard.image_uris?.large || scryfallCard.image_uris?.normal;
+    
+    await db.runAsync(
+      `UPDATE cards 
+       SET scryfall_id = ?, 
+           mana_cost = ?, 
+           type_line = ?, 
+           oracle_text = ?, 
+           power = ?, 
+           toughness = ?, 
+           loyalty = ?, 
+           defense = ?, 
+           image_uri = ?, 
+           large_image_url = ?
+       WHERE id = ?`,
+      [
+        scryfallCard.id,
+        scryfallCard.mana_cost || null,
+        scryfallCard.type_line || null,
+        scryfallCard.oracle_text || null,
+        scryfallCard.power || null,
+        scryfallCard.toughness || null,
+        scryfallCard.loyalty || null,
+        scryfallCard.defense || null,
+        imageUri || null,
+        largeImageUrl || null,
+        cardId,
+      ]
+    );
+    
+    // Return updated card
+    const updatedCard = await db.getFirstAsync<any>(
+      'SELECT * FROM cards WHERE id = ?',
+      [cardId]
+    );
+    
+    if (!updatedCard) return null;
+    
+    return {
+      id: updatedCard.id,
+      scryfallId: updatedCard.scryfall_id,
+      name: updatedCard.name,
+      manaCost: updatedCard.mana_cost,
+      typeLine: updatedCard.type_line,
+      cardType: updatedCard.card_type,
+      imageUri: updatedCard.image_uri,
+      oracleText: updatedCard.oracle_text,
+      power: updatedCard.power,
+      toughness: updatedCard.toughness,
+      loyalty: updatedCard.loyalty,
+      defense: updatedCard.defense,
+      largeImageUrl: updatedCard.large_image_url,
+      createdAt: updatedCard.created_at,
+    };
+  } catch (error) {
+    console.error('Error in fetchAndUpdateCardDetails:', error);
+    throw error;
+  }
+};

@@ -69,24 +69,68 @@ const DeckDetailScreen: React.FC = () => {
     setIsLoadingCardDetails(true);
     setShowCardModal(true);
     
-    // Find the full card data from deck.cards
-    const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
-    if (deckCard?.card) {
-      setSelectedCard({
-        name: deckCard.card.name,
-        typeLine: deckCard.card.typeLine || '',
-        manaCost: deckCard.card.manaCost,
-        oracleText: deckCard.card.oracleText,
-        power: deckCard.card.power,
-        toughness: deckCard.card.toughness,
-        loyalty: deckCard.card.loyalty,
-        defense: deckCard.card.defense,
-        largeImageUrl: deckCard.card.largeImageUrl,
-      });
-    } else {
-      setSelectedCard(card as any);
+    try {
+      // Find the full card data from deck.cards
+      const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
+      
+      if (deckCard?.card) {
+        // Check if we need to fetch details from Scryfall (missing oracle text)
+        if (!deckCard.card.oracleText) {
+          console.log(`Fetching details for ${deckCard.card.name} from Scryfall...`);
+          const { fetchAndUpdateCardDetails } = await import('../database/cardService');
+          const updatedCard = await fetchAndUpdateCardDetails(deckCard.card.id, deckCard.card.name);
+          
+          if (updatedCard) {
+            setSelectedCard({
+              name: updatedCard.name,
+              typeLine: updatedCard.typeLine || '',
+              manaCost: updatedCard.manaCost,
+              oracleText: updatedCard.oracleText,
+              power: updatedCard.power,
+              toughness: updatedCard.toughness,
+              loyalty: updatedCard.loyalty,
+              defense: updatedCard.defense,
+              largeImageUrl: updatedCard.largeImageUrl,
+            });
+            // Refetch deck to update cache with new card details
+            refetch();
+          } else {
+            // Fallback to existing data
+            setSelectedCard({
+              name: deckCard.card.name,
+              typeLine: deckCard.card.typeLine || '',
+              manaCost: deckCard.card.manaCost,
+              oracleText: deckCard.card.oracleText,
+              power: deckCard.card.power,
+              toughness: deckCard.card.toughness,
+              loyalty: deckCard.card.loyalty,
+              defense: deckCard.card.defense,
+              largeImageUrl: deckCard.card.largeImageUrl,
+            });
+          }
+        } else {
+          // Already has oracle text, use cached data
+          setSelectedCard({
+            name: deckCard.card.name,
+            typeLine: deckCard.card.typeLine || '',
+            manaCost: deckCard.card.manaCost,
+            oracleText: deckCard.card.oracleText,
+            power: deckCard.card.power,
+            toughness: deckCard.card.toughness,
+            loyalty: deckCard.card.loyalty,
+            defense: deckCard.card.defense,
+            largeImageUrl: deckCard.card.largeImageUrl,
+          });
+        }
+      } else {
+        setSelectedCard(card as any);
+      }
+    } catch (error) {
+      console.error('Error fetching card details:', error);
+      Alert.alert('Error', 'Failed to load card details');
+    } finally {
+      setIsLoadingCardDetails(false);
     }
-    setIsLoadingCardDetails(false);
   };
 
   const handleCloseCardModal = () => {
