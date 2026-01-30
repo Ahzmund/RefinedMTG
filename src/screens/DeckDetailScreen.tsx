@@ -53,7 +53,7 @@ const DeckDetailScreen: React.FC = () => {
     
     // Format: "quantity cardname" per line
     const decklistText = deck.cards
-      .map(card => `${card.quantity} ${card.name}`)
+      .map(card => `${card.quantity} ${card.card?.name || 'Unknown Card'}`)
       .join('\n');
     
     try {
@@ -98,6 +98,16 @@ const DeckDetailScreen: React.FC = () => {
   }
 
   const totalCards = deck.cards?.reduce((sum, card) => sum + card.quantity, 0) || 0;
+
+  // Transform DeckCard[] to CardEntity[] for CardSectionList
+  const cardEntities: CardEntity[] = deck.cards?.map(deckCard => ({
+    name: deckCard.card?.name || 'Unknown Card',
+    typeLine: deckCard.card?.typeLine || '',
+    manaCost: deckCard.card?.manaCost || '',
+    quantity: deckCard.quantity,
+    isCommander: deckCard.isCommander,
+    cardType: deckCard.card?.cardType || 'Other',
+  })) || [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -156,7 +166,7 @@ const DeckDetailScreen: React.FC = () => {
 
       {/* Tab content */}
       {activeTab === 'current' ? (
-        <CardSectionList cards={deck.cards} onCardPress={handleCardPress} />
+        <CardSectionList cards={cardEntities} onCardPress={handleCardPress} />
       ) : (
         <ScrollView style={styles.historyContainer}>
           {(deck.changelogs?.length || 0) === 0 ? (
