@@ -63,6 +63,9 @@ const ChangeEntryScreen: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<CardDetails | null>(null);
   const [isLoadingCardDetails, setIsLoadingCardDetails] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'changes' | 'decklist'>('changes');
 
   // Convert deck cards to suggestion format for removal autocomplete
   const deckCardSuggestions = useMemo<CardSuggestion[]>(() => {
@@ -246,9 +249,29 @@ const ChangeEntryScreen: React.FC = () => {
         style={styles.container}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
-        <View style={styles.splitContainer}>
-          {/* Top half - Note taking */}
-          <View style={styles.topHalf}>
+        {/* Tab Bar */}
+        <View style={styles.tabBar}>
+          <Pressable
+            style={[styles.tab, activeTab === 'changes' && styles.activeTab]}
+            onPress={() => setActiveTab('changes')}
+          >
+            <Text style={[styles.tabText, activeTab === 'changes' && styles.activeTabText]}>
+              Make Changes
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tab, activeTab === 'decklist' && styles.activeTab]}
+            onPress={() => setActiveTab('decklist')}
+          >
+            <Text style={[styles.tabText, activeTab === 'decklist' && styles.activeTabText]}>
+              Current Decklist
+            </Text>
+          </Pressable>
+        </View>
+        
+        {/* Tab Content */}
+        {activeTab === 'changes' ? (
+          <View style={styles.tabContent}>
             <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
               {/* Overall Change Description */}
               <View style={styles.section}>
@@ -419,10 +442,8 @@ const ChangeEntryScreen: React.FC = () => {
               </Pressable>
             </ScrollView>
           </View>
-
-          {/* Bottom half - Current decklist */}
-          <View style={styles.bottomHalf}>
-            <Text style={styles.decklistTitle}>Current Decklist</Text>
+        ) : (
+          <View style={styles.tabContent}>
             {deck?.cards ? (
               <CardSectionList cards={deck.cards.map(dc => ({
                 name: dc.card?.name || 'Unknown',
@@ -436,7 +457,7 @@ const ChangeEntryScreen: React.FC = () => {
               <ActivityIndicator size="large" color="#6200ee" style={styles.loader} />
             )}
           </View>
-        </View>
+        )}
       </KeyboardAvoidingView>
 
       {/* Card Detail Modal */}
@@ -459,17 +480,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  splitContainer: {
-    flex: 1,
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#fff',
   },
-  topHalf: {
+  tab: {
     flex: 1,
-    borderBottomWidth: 2,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
     borderBottomColor: '#6200ee',
   },
-  bottomHalf: {
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#6200ee',
+  },
+  tabContent: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   scrollView: {
     flex: 1,
@@ -599,13 +635,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  decklistTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    padding: 16,
-    paddingBottom: 8,
   },
   loader: {
     marginTop: 32,

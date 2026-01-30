@@ -290,11 +290,8 @@ export const applyDeckChanges = async (
     
     // Process cards to add
     for (const cardToAdd of changes.cardsToAdd) {
-      const card = await getOrCreateCard({
-        name: cardToAdd.name,
-        typeLine: cardToAdd.typeLine,
-        manaCost: cardToAdd.manaCost,
-      });
+      // Fetch full card details from Scryfall by name to get proper typeLine
+      const card = await getOrCreateCard(cardToAdd.name);
       
       // Check if card already exists in deck
       const existingDeckCard = await db.getFirstAsync<any>(
@@ -323,11 +320,8 @@ export const applyDeckChanges = async (
     // Create changelog - need to get card IDs for each card
     const changelogCardsAdded = await Promise.all(
       changes.cardsToAdd.map(async (card) => {
-        const cardRecord = await getOrCreateCard({
-          name: card.name,
-          typeLine: card.typeLine,
-          manaCost: card.manaCost,
-        });
+        // Fetch full card details from Scryfall by name
+        const cardRecord = await getOrCreateCard(card.name);
         return {
           cardId: cardRecord.id,
           quantity: card.quantity,
@@ -338,11 +332,8 @@ export const applyDeckChanges = async (
     
     const changelogCardsRemoved = await Promise.all(
       changes.cardsToRemove.map(async (card) => {
-        const cardRecord = await getOrCreateCard({
-          name: card.name,
-          typeLine: card.typeLine,
-          manaCost: card.manaCost,
-        });
+        // Fetch full card details from Scryfall by name
+        const cardRecord = await getOrCreateCard(card.name);
         return {
           cardId: cardRecord.id,
           quantity: card.quantity,

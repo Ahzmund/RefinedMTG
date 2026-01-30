@@ -97,6 +97,8 @@ export const getChangelogsByDeck = async (deckId: string): Promise<Changelog[]> 
         WHERE cc.changelog_id = ?`,
         [clRow.id]
       );
+      
+      console.log('Changelog card rows:', JSON.stringify(clCardRows, null, 2));
 
       const cardsAdded = clCardRows
         .filter(cc => cc.action === 'added')
