@@ -65,6 +65,67 @@ const DeckDetailScreen: React.FC = () => {
     }
   };
 
+  const handleCardLongPress = async (card: CardEntity) => {
+    // Count current commanders
+    const commanderCount = deck?.cards.filter(dc => dc.isCommander).length || 0;
+    
+    if (card.isCommander) {
+      // Show "Remove as Commander" option
+      Alert.alert(
+        'Commander Options',
+        `Remove ${card.name} as commander?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove as Commander',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const { toggleCommander } = await import('../database/deckService');
+                const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
+                if (deckCard) {
+                  await toggleCommander(deckId, deckCard.id, false);
+                  refetch();
+                }
+              } catch (error) {
+                console.error('Error removing commander:', error);
+                Alert.alert('Error', 'Failed to remove commander');
+              }
+            },
+          },
+        ]
+      );
+    } else if (commanderCount < 2) {
+      // Show "Set as Commander" option (only if < 2 commanders)
+      Alert.alert(
+        'Commander Options',
+        `Set ${card.name} as commander?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Set as Commander',
+            onPress: async () => {
+              try {
+                const { toggleCommander } = await import('../database/deckService');
+                const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
+                if (deckCard) {
+                  await toggleCommander(deckId, deckCard.id, true);
+                  refetch();
+                }
+              } catch (error) {
+                console.error('Error setting commander:', error);
+                Alert.alert('Error', 'Failed to set commander');
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      // Already have 2 commanders
+      Alert.alert('Maximum Commanders', 'You can only have up to 2 commanders in a deck.');
+    }
+  };
+
   const handleCardPress = async (card: CardEntity) => {
     setIsLoadingCardDetails(true);
     setShowCardModal(true);
@@ -226,7 +287,7 @@ const DeckDetailScreen: React.FC = () => {
 
       {/* Tab content */}
       {activeTab === 'current' ? (
-        <CardSectionList cards={cardEntities} onCardPress={handleCardPress} />
+        <CardSectionList cards={cardEntities} onCardPress={handleCardPress} onCardLongPress={handleCardLongPress} />
       ) : (
         <ScrollView style={styles.historyContainer}>
           {(deck.changelogs?.length || 0) === 0 ? (

@@ -37,6 +37,8 @@ const ImportDeckModal: React.FC = () => {
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showMoxfieldWebView, setShowMoxfieldWebView] = useState(false);
+  const [commander1, setCommander1] = useState('');
+  const [commander2, setCommander2] = useState('');
   
   const { data: folders } = useFolders();
 
@@ -56,7 +58,8 @@ const ImportDeckModal: React.FC = () => {
 
     try {
       if (method === 'empty') {
-        const deckId = await createEmptyDeck(deckName, selectedFolderId || undefined);
+        const commanders = [commander1, commander2].filter(c => c.trim());
+        const deckId = await createEmptyDeck(deckName, selectedFolderId || undefined, commanders);
         queryClient.invalidateQueries({ queryKey: ['decks'] });
         showToast('Deck created successfully!');
         setTimeout(() => navigation.goBack(), 1000);
@@ -67,7 +70,8 @@ const ImportDeckModal: React.FC = () => {
           return;
         }
 
-        const result = await importDeckFromDecklist(deckName, decklist, selectedFolderId || undefined);
+        const commanders = [commander1, commander2].filter(c => c.trim());
+        const result = await importDeckFromDecklist(deckName, decklist, selectedFolderId || undefined, commanders);
         queryClient.invalidateQueries({ queryKey: ['decks'] });
         
         if (result.failedCards.length > 0) {
@@ -274,6 +278,28 @@ const ImportDeckModal: React.FC = () => {
             )}
           </View>
 
+          {/* Command Zone (for empty and decklist methods) */}
+          {(method === 'empty' || method === 'decklist') && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Command Zone (Optional)</Text>
+              <Text style={styles.helperText}>Add up to 2 commanders (legendary creatures/planeswalkers)</Text>
+              <TextInput
+                style={styles.input}
+                value={commander1}
+                onChangeText={setCommander1}
+                placeholder="Commander 1 (e.g., Atraxa, Praetors' Voice)"
+                placeholderTextColor="#999"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: 8 }]}
+                value={commander2}
+                onChangeText={setCommander2}
+                placeholder="Commander 2 (optional, for Partner)"
+                placeholderTextColor="#999"
+              />
+            </View>
+          )}
+
           {/* Method-specific inputs */}
           {method === 'moxfield' && (
             <View style={styles.inputContainer}>
@@ -362,6 +388,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
   },
   methodButtons: {
     flexDirection: 'row',

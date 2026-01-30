@@ -13,13 +13,19 @@ export interface ImportResult {
 export const importDeckFromDecklist = async (
   deckName: string,
   decklist: string,
-  folderId?: string
+  folderId?: string,
+  commanders?: string[]
 ): Promise<ImportResult> => {
   // Parse the decklist
   const parsedCards = parseDecklist(decklist);
   
   // Create the deck
   const deckId = await createDeck(deckName, folderId, 'manual');
+  
+  // Add commanders first
+  if (commanders && commanders.length > 0) {
+    await addCommandersToDeck(deckId, commanders);
+  }
   
   // Import cards
   const result = await importCardsToNewDeck(deckId, parsedCards);
@@ -46,8 +52,15 @@ export const importDeckFromMoxfield = async (
   return result;
 };
 
-export const createEmptyDeck = async (deckName: string, folderId?: string): Promise<string> => {
-  return await createDeck(deckName, folderId, 'empty');
+export const createEmptyDeck = async (deckName: string, folderId?: string, commanders?: string[]): Promise<string> => {
+  const deckId = await createDeck(deckName, folderId, 'empty');
+  
+  // Add commanders if provided
+  if (commanders && commanders.length > 0) {
+    await addCommandersToDeck(deckId, commanders);
+  }
+  
+  return deckId;
 };
 
 // Helper function to import cards into a newly created deck
@@ -99,4 +112,27 @@ const importCardsToNewDeck = async (
     successCount: successfulCards.length,
     failedCards,
   };
+};
+
+// Helper function to add commanders to a deck
+const addCommandersToDeck = async (deckId: string, commanderNames: string[]): Promise<void> => {
+  const { searchCardByName } = await import('./scryfallService');
+  
+  for (const commanderName of commanderNames) {
+    try {
+      // Fetch card from Scryfall
+      const scryfallCard = await searchCardByName(commanderName);
+      
+      if (scryfallCard) {
+        // Create/get card in database
+        const cardId = await getOrCreateCard(scryfallCard);
+        
+        // Add to deck with isCommander = true
+        await addCardToDeck(deckId, cardId, 1, true);
+      }
+    } catch (error) {
+      console.error(`Failed to add commander ${commanderName}:`, error);
+      // Continue with other commanders even if one fails
+    }
+  }
 };

@@ -7,9 +7,10 @@ import ManaSymbols from './ManaSymbols';
 interface CardSectionListProps {
   cards: CardEntity[];
   onCardPress?: (card: CardEntity) => void;
+  onCardLongPress?: (card: CardEntity) => void;
 }
 
-const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress }) => {
+const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, onCardLongPress }) => {
   // Separate commanders from other cards
   const commanders = cards?.filter(card => card.isCommander === true) ?? [];
   const nonCommanderCards = cards?.filter(card => card.isCommander !== true) ?? [];
@@ -26,11 +27,16 @@ const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress })
     <Pressable
       style={({ pressed }) => [
         styles.cardItem,
+        item.isCommander && styles.commanderCard,
         pressed && styles.cardItemPressed,
       ]}
       onPress={() => onCardPress?.(item)}
+      onLongPress={() => onCardLongPress?.(item)}
     >
-      <Text style={styles.cardName}>{item.name}</Text>
+      <View style={styles.cardNameContainer}>
+        {item.isCommander && <Text style={styles.crownIcon}>👑</Text>}
+        <Text style={[styles.cardName, item.isCommander && styles.commanderName]}>{item.name}</Text>
+      </View>
       <View style={styles.rightInfo}>
         <ManaSymbols manaCost={item.manaCost || ''} size={16} />
         <Text style={styles.cardQuantity}>×{item.quantity}</Text>
@@ -111,6 +117,25 @@ const styles = StyleSheet.create({
     color: '#6200ee',
     minWidth: 30,
     textAlign: 'right',
+  },
+  commanderCard: {
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    backgroundColor: '#FFFEF0',
+  },
+  cardNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  crownIcon: {
+    fontSize: 18,
+    marginRight: 6,
+  },
+  commanderName: {
+    color: '#B8860B',
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,

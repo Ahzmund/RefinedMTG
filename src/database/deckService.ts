@@ -361,3 +361,24 @@ export const applyDeckChanges = async (
     throw error;
   }
 };
+
+export const toggleCommander = async (deckId: string, deckCardId: string, isCommander: boolean): Promise<void> => {
+  try {
+    const db = getDatabase();
+    
+    await db.runAsync(
+      'UPDATE deck_cards SET is_commander = ? WHERE id = ?',
+      [isCommander ? 1 : 0, deckCardId]
+    );
+    
+    // Update deck's updated_at timestamp
+    const now = Date.now();
+    await db.runAsync(
+      'UPDATE decks SET updated_at = ? WHERE id = ?',
+      [now, deckId]
+    );
+  } catch (error) {
+    console.error('Error in toggleCommander:', error);
+    throw error;
+  }
+};
