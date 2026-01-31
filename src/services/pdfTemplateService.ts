@@ -79,7 +79,6 @@ export const generateChangelogHTML = (
       margin: 0 auto;
       background: white;
       border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       overflow: hidden;
     }
     
