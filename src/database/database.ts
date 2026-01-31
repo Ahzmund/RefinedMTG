@@ -6,6 +6,26 @@ let db: SQLite.SQLiteDatabase | null = null;
 
 const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
   try {
+    // Create migrations table if it doesn't exist
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS migrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version INTEGER UNIQUE NOT NULL,
+        applied_at INTEGER NOT NULL
+      )
+    `);
+    
+    // Helper function to check if a migration has been applied
+    const isMigrationApplied = async (version: number): Promise<boolean> => {
+      const result = await db.getAllAsync<any>('SELECT version FROM migrations WHERE version = ?', [version]);
+      return result.length > 0;
+    };
+    
+    // Helper function to mark a migration as applied
+    const markMigrationApplied = async (version: number): Promise<void> => {
+      await db.runAsync('INSERT INTO migrations (version, applied_at) VALUES (?, ?)', [version, Date.now()]);
+    };
+    
     // Check if new columns exist in cards table
     const tableInfo = await db.getAllAsync<any>('PRAGMA table_info(cards)');
     const columnNames = tableInfo.map((col: any) => col.name);
@@ -61,48 +81,54 @@ const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
       await db.execAsync('ALTER TABLE deck_cards ADD COLUMN is_sideboard INTEGER DEFAULT 0');
     }
     
-    // Migration: Recalculate card_type for all cards to fix categorization
-    // This fixes issues like Urza's Saga (should be Land, not Enchantment)
-    // and ensures Planeswalkers are detected correctly
-    console.log('Recalculating card types for existing cards...');
-    const { parseCardType } = await import('../services/scryfallService');
-    const allCards = await db.getAllAsync<any>('SELECT id, type_line, card_type FROM cards WHERE type_line IS NOT NULL');
-    
-    let updatedCount = 0;
-    for (const card of allCards) {
-      const correctType = parseCardType(card.type_line);
-      if (card.card_type !== correctType) {
-        await db.runAsync('UPDATE cards SET card_type = ? WHERE id = ?', [correctType, card.id]);
-        updatedCount++;
-      }
-    }
-    
-    if (updatedCount > 0) {
-      console.log(`Updated card_type for ${updatedCount} cards`);
-    }
-    
-    // Migration: Populate CMC for existing cards that don't have it
-    console.log('Populating CMC for existing cards...');
-    const { searchCardByName } = await import('../services/scryfallService');
-    const cardsWithoutCMC = await db.getAllAsync<any>('SELECT id, name FROM cards WHERE cmc IS NULL OR cmc = 0');
-    
-    let cmcUpdatedCount = 0;
-    for (const card of cardsWithoutCMC) {
-      try {
-        const scryfallCard = await searchCardByName(card.name);
-        if (scryfallCard && scryfallCard.cmc !== undefined) {
-          await db.runAsync('UPDATE cards SET cmc = ? WHERE id = ?', [scryfallCard.cmc, card.id]);
-          cmcUpdatedCount++;
+    // Migration v1: Recalculate card_type for all cards to fix categorization
+    if (!(await isMigrationApplied(1))) {
+      console.log('Migration v1: Recalculating card types for existing cards...');
+      const { parseCardType } = await import('../services/scryfallService');
+      const allCards = await db.getAllAsync<any>('SELECT id, type_line, card_type FROM cards WHERE type_line IS NOT NULL');
+      
+      let updatedCount = 0;
+      for (const card of allCards) {
+        const correctType = parseCardType(card.type_line);
+        if (card.card_type !== correctType) {
+          await db.runAsync('UPDATE cards SET card_type = ? WHERE id = ?', [correctType, card.id]);
+          updatedCount++;
         }
-        // Rate limiting: Wait 100ms between requests to avoid Scryfall 429 errors
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (error) {
-        console.warn(`Failed to fetch CMC for ${card.name}:`, error);
       }
+      
+      if (updatedCount > 0) {
+        console.log(`Migration v1: Updated card_type for ${updatedCount} cards`);
+      }
+      
+      await markMigrationApplied(1);
     }
     
-    if (cmcUpdatedCount > 0) {
-      console.log(`Updated CMC for ${cmcUpdatedCount} cards`);
+    // Migration v2: Populate CMC for existing cards that don't have it
+    if (!(await isMigrationApplied(2))) {
+      console.log('Migration v2: Populating CMC for existing cards...');
+      const { searchCardByName } = await import('../services/scryfallService');
+      const cardsWithoutCMC = await db.getAllAsync<any>('SELECT id, name FROM cards WHERE cmc IS NULL OR cmc = 0');
+      
+      let cmcUpdatedCount = 0;
+      for (const card of cardsWithoutCMC) {
+        try {
+          const scryfallCard = await searchCardByName(card.name);
+          if (scryfallCard && scryfallCard.cmc !== undefined) {
+            await db.runAsync('UPDATE cards SET cmc = ? WHERE id = ?', [scryfallCard.cmc, card.id]);
+            cmcUpdatedCount++;
+          }
+          // Rate limiting: Wait 100ms between requests to avoid Scryfall 429 errors
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.warn(`Failed to fetch CMC for ${card.name}:`, error);
+        }
+      }
+      
+      if (cmcUpdatedCount > 0) {
+        console.log(`Migration v2: Updated CMC for ${cmcUpdatedCount} cards`);
+      }
+      
+      await markMigrationApplied(2);
     }
     
     console.log('Migrations completed successfully');

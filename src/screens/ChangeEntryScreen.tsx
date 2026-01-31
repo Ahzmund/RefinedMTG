@@ -49,12 +49,14 @@ const ChangeEntryScreen: React.FC = () => {
   const [overallDescription, setOverallDescription] = useState('');
 
   const [selectedAddCard, setSelectedAddCard] = useState<CardSuggestion | null>(null);
+  const [addCardQuery, setAddCardQuery] = useState('');
   const [addCardQuantity, setAddCardQuantity] = useState('1');
   const [addCardReasoning, setAddCardReasoning] = useState('');
   const [cardsToAdd, setCardsToAdd] = useState<CardInput[]>([]);
 
   // Selected card for removing
   const [selectedRemoveCard, setSelectedRemoveCard] = useState<CardSuggestion | null>(null);
+  const [removeCardQuery, setRemoveCardQuery] = useState('');
   const [removeCardQuantity, setRemoveCardQuantity] = useState('1');
   const [removeCardReasoning, setRemoveCardReasoning] = useState('');
   const [cardsToRemove, setCardsToRemove] = useState<CardInput[]>([]);
@@ -127,6 +129,7 @@ const ChangeEntryScreen: React.FC = () => {
 
     setCardsToAdd([...cardsToAdd, newCard]);
     setSelectedAddCard(null);
+    setAddCardQuery('');
     setAddCardQuantity('1');
     setAddCardReasoning('');
   };
@@ -154,6 +157,7 @@ const ChangeEntryScreen: React.FC = () => {
 
     setCardsToRemove([...cardsToRemove, newCard]);
     setSelectedRemoveCard(null);
+    setRemoveCardQuery('');
     setRemoveCardQuantity('1');
     setRemoveCardReasoning('');
   };
@@ -338,6 +342,8 @@ const ChangeEntryScreen: React.FC = () => {
                     deckCards={deckCardSuggestions}
                     onSelectCard={handleSelectRemoveCard}
                     disabled={isPending}
+                    value={removeCardQuery}
+                    onChangeText={setRemoveCardQuery}
                   />
 
                   {selectedRemoveCard && (
@@ -405,6 +411,8 @@ const ChangeEntryScreen: React.FC = () => {
                     placeholder="Start typing card name..."
                     onSelectCard={handleSelectAddCard}
                     disabled={isPending}
+                    value={addCardQuery}
+                    onChangeText={setAddCardQuery}
                   />
 
                   {selectedAddCard && (
