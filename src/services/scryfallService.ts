@@ -17,9 +17,19 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard |
 
     const data = await response.json();
     
+    // Handle MDFC (Modal Double Faced Cards) and other multi-faced cards
+    // For MDFCs, mana_cost is null at top level, but exists in card_faces[0]
+    const isMultiFaced = data.card_faces && data.card_faces.length > 0;
+    const frontFace = isMultiFaced ? data.card_faces[0] : null;
+    
+    // For display purposes, use front face mana cost for MDFCs
+    const manaCost = data.mana_cost || (frontFace?.mana_cost) || null;
+    
     // Debug: Log raw API response
     console.log('Scryfall API raw response for', cardName, ':', JSON.stringify({
-      oracle_text: data.oracle_text,
+      is_multi_faced: isMultiFaced,
+      mana_cost: manaCost,
+      oracle_text: data.oracle_text || frontFace?.oracle_text,
       power: data.power,
       toughness: data.toughness,
       loyalty: data.loyalty,
@@ -29,14 +39,15 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard |
     return {
       id: data.id,
       name: data.name,
-      mana_cost: data.mana_cost,
+      mana_cost: manaCost,
       type_line: data.type_line,
-      oracle_text: data.oracle_text,
-      power: data.power,
-      toughness: data.toughness,
-      loyalty: data.loyalty,
-      defense: data.defense,
-      image_uris: data.image_uris,
+      oracle_text: data.oracle_text || frontFace?.oracle_text || null,
+      power: data.power || frontFace?.power || null,
+      toughness: data.toughness || frontFace?.toughness || null,
+      loyalty: data.loyalty || frontFace?.loyalty || null,
+      defense: data.defense || frontFace?.defense || null,
+      image_uris: data.image_uris || frontFace?.image_uris,
+      card_faces: isMultiFaced ? data.card_faces : undefined,
     };
   } catch (error) {
     console.error('Error fetching card from Scryfall:', error);
@@ -47,7 +58,14 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard |
 export const parseCardType = (typeLine: string): string => {
   if (!typeLine) return 'Other';
   
-  const types = ['Creature', 'Instant', 'Sorcery', 'Enchantment', 'Artifact', 'Planeswalker', 'Land', 'Battle'];
+  // Special case: If a card is both Land and another type (e.g., Urza's Saga is "Enchantment Land"),
+  // prioritize Land for categorization
+  if (typeLine.includes('Land')) {
+    return 'Land';
+  }
+  
+  // Check other types in priority order
+  const types = ['Creature', 'Instant', 'Sorcery', 'Enchantment', 'Artifact', 'Planeswalker', 'Battle'];
   
   for (const type of types) {
     if (typeLine.includes(type)) {

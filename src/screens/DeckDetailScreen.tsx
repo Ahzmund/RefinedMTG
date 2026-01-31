@@ -53,7 +53,7 @@ const DeckDetailScreen: React.FC = () => {
         for (const deckCard of deck.cards) {
           if (deckCard.card && !deckCard.card.oracleText) {
             try {
-              await fetchAndUpdateCardDetails(deckCard.card.id);
+              await fetchAndUpdateCardDetails(deckCard.card.id, deckCard.card.name);
             } catch (error) {
               console.error(`Failed to fetch details for ${deckCard.card.name}:`, error);
             }

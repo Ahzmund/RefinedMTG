@@ -84,6 +84,21 @@ export interface ScryfallCard {
     small?: string;
     large?: string;
   };
+  card_faces?: Array<{
+    name: string;
+    mana_cost?: string;
+    type_line?: string;
+    oracle_text?: string;
+    power?: string;
+    toughness?: string;
+    loyalty?: string;
+    defense?: string;
+    image_uris?: {
+      normal?: string;
+      small?: string;
+      large?: string;
+    };
+  }>;
 }
 
 export enum CardType {
