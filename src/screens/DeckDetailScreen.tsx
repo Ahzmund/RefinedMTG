@@ -609,9 +609,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
   },
-});
-
-export default DeckDetailScreen;
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -685,3 +682,6 @@ export default DeckDetailScreen;
     fontSize: 16,
     fontWeight: '600',
   },
+});
+
+export default DeckDetailScreen;
