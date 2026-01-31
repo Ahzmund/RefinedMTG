@@ -237,6 +237,33 @@ export const generateChangelogHTML = (
       font-size: 16px;
     }
     
+    /* Print-specific rules to prevent page breaks */
+    @media print {
+      .card-item {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      
+      .section-title {
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+      
+      body {
+        background: white;
+        padding: 0;
+      }
+      
+      .container {
+        box-shadow: none;
+      }
+    }
+    
     .footer {
       background: #f5f5f5;
       padding: 20px 30px;
