@@ -81,6 +81,28 @@ const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
       console.log(`Updated card_type for ${updatedCount} cards`);
     }
     
+    // Migration: Populate CMC for existing cards that don't have it
+    console.log('Populating CMC for existing cards...');
+    const { searchCardByName } = await import('../services/scryfallService');
+    const cardsWithoutCMC = await db.getAllAsync<any>('SELECT id, name FROM cards WHERE cmc IS NULL OR cmc = 0');
+    
+    let cmcUpdatedCount = 0;
+    for (const card of cardsWithoutCMC) {
+      try {
+        const scryfallCard = await searchCardByName(card.name);
+        if (scryfallCard && scryfallCard.cmc !== undefined) {
+          await db.runAsync('UPDATE cards SET cmc = ? WHERE id = ?', [scryfallCard.cmc, card.id]);
+          cmcUpdatedCount++;
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch CMC for ${card.name}:`, error);
+      }
+    }
+    
+    if (cmcUpdatedCount > 0) {
+      console.log(`Updated CMC for ${cmcUpdatedCount} cards`);
+    }
+    
     console.log('Migrations completed successfully');
   } catch (error) {
     console.error('Error running migrations:', error);
