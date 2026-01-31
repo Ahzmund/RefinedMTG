@@ -383,7 +383,7 @@ const DeckDetailScreen: React.FC = () => {
                   manaCost: cc.card?.manaCost,
                 })),
               };
-              return <ChangeHistoryItem key={change.id} change={transformedChange} deckId={deckId} />;
+              return <ChangeHistoryItem key={change.id} change={transformedChange} deckId={deckId} deckName={deck.name} />;
             })
           )}
         </ScrollView>

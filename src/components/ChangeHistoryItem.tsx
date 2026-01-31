@@ -6,18 +6,21 @@ import { ChangeHistoryItem as ChangeHistoryType } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteChangelog, updateChangelogDescription } from '../database/changelogService';
+import { exportChangelogToPDF } from '../services/pdfExportService';
 
 interface ChangeHistoryItemProps {
   change: ChangeHistoryType;
   deckId: string;
+  deckName: string;
 }
 
-const ChangeHistoryItem: React.FC<ChangeHistoryItemProps> = ({ change, deckId }) => {
+const ChangeHistoryItem: React.FC<ChangeHistoryItemProps> = ({ change, deckId, deckName }) => {
   const [expanded, setExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [description, setDescription] = useState(change.description || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const queryClient = useQueryClient();
 
   // Debug logging
@@ -94,6 +97,26 @@ const ChangeHistoryItem: React.FC<ChangeHistoryItemProps> = ({ change, deckId })
     }
   };
 
+  const handleExportPDF = async () => {
+    if (change.isImportError) {
+      Alert.alert('Cannot Export', 'Import error entries cannot be exported to PDF.');
+      return;
+    }
+
+    setIsExportingPDF(true);
+    try {
+      await exportChangelogToPDF({
+        deckName,
+        changelog: change,
+      });
+    } catch (error: any) {
+      console.error('Failed to export PDF:', error);
+      Alert.alert('Export Failed', error?.message || 'Failed to generate PDF');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Pressable
@@ -142,6 +165,28 @@ const ChangeHistoryItem: React.FC<ChangeHistoryItemProps> = ({ change, deckId })
 
       {expanded && (
         <View style={styles.content}>
+          {/* Action Buttons */}
+          {!change.isImportError && (
+            <View style={styles.actionButtons}>
+              <Pressable
+                style={styles.actionButton}
+                onPress={handleExportPDF}
+                disabled={isExportingPDF}
+                accessibilityRole="button"
+                accessibilityLabel="Export to PDF"
+              >
+                {isExportingPDF ? (
+                  <ActivityIndicator color="#6200ee" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="document-text" size={18} color="#6200ee" />
+                    <Text style={styles.actionButtonText}>Export PDF</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          )}
+
           {/* Description Section */}
           <View style={styles.descriptionSection}>
             <View style={styles.descriptionHeader}>
@@ -416,6 +461,28 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#f5f0ff',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#e0d4f7',
+  },
+  actionButtonText: {
+    fontSize: 14,
+    color: '#6200ee',
     fontWeight: '600',
   },
 });
