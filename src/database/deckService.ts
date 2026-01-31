@@ -79,7 +79,7 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
         c.name, c.mana_cost as manaCost, c.type_line as typeLine,
         c.card_type as cardType, c.image_uri as imageUri, c.oracle_text as oracleText,
         c.power, c.toughness, c.loyalty, c.defense, c.large_image_url as largeImageUrl,
-        c.created_at as cardCreatedAt
+        c.cmc, c.created_at as cardCreatedAt
       FROM deck_cards dc
       JOIN cards c ON dc.card_id = c.id
       WHERE dc.deck_id = ?
@@ -106,7 +106,7 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
             cc.id, cc.changelog_id as changelogId, cc.card_id as cardId,
             cc.action, cc.quantity, cc.reasoning,
             c.name, c.mana_cost as manaCost, c.type_line as typeLine,
-            c.card_type as cardType, c.created_at as cardCreatedAt
+            c.card_type as cardType, c.cmc, c.created_at as cardCreatedAt
           FROM changelog_cards cc
           JOIN cards c ON cc.card_id = c.id
           WHERE cc.changelog_id = ?`,
@@ -128,6 +128,7 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
               manaCost: cc.manaCost,
               typeLine: cc.typeLine,
               cardType: cc.cardType,
+              cmc: cc.cmc,
               createdAt: cc.cardCreatedAt || 0,
             },
           }));
@@ -147,6 +148,7 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
               manaCost: cc.manaCost,
               typeLine: cc.typeLine,
               cardType: cc.cardType,
+              cmc: cc.cmc,
               createdAt: cc.cardCreatedAt || 0,
             },
           }));
@@ -185,6 +187,7 @@ export const getDeckById = async (deckId: string): Promise<DeckWithCards | null>
         loyalty: row.loyalty,
         defense: row.defense,
         largeImageUrl: row.largeImageUrl,
+        cmc: row.cmc,
         createdAt: row.cardCreatedAt || 0,
       },
     }));

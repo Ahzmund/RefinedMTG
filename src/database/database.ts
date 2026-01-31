@@ -94,6 +94,8 @@ const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
           await db.runAsync('UPDATE cards SET cmc = ? WHERE id = ?', [scryfallCard.cmc, card.id]);
           cmcUpdatedCount++;
         }
+        // Rate limiting: Wait 100ms between requests to avoid Scryfall 429 errors
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.warn(`Failed to fetch CMC for ${card.name}:`, error);
       }
