@@ -303,21 +303,6 @@ const DeckDetailScreen: React.FC = () => {
           <Text style={styles.cardCount}>{totalCards} cards</Text>
           <View style={styles.headerButtons}>
             <Pressable
-              style={[styles.imageToggle, showImageMode && styles.imageToggleActive]}
-              onPress={() => setShowImageMode(!showImageMode)}
-              accessibilityRole="button"
-              accessibilityLabel={showImageMode ? "Show text mode" : "Show image mode"}
-            >
-              <Ionicons 
-                name={showImageMode ? "image" : "document-text-outline"} 
-                size={20} 
-                color={showImageMode ? "#fff" : "#6200ee"} 
-              />
-              <Text style={[styles.toggleText, showImageMode && styles.toggleTextActive]}>
-                {showImageMode ? 'Image' : 'Text'}
-              </Text>
-            </Pressable>
-            <Pressable
               style={styles.moxfieldLink}
               onPress={handleCopyDecklist}
               accessibilityRole="button"
@@ -472,6 +457,25 @@ const DeckDetailScreen: React.FC = () => {
               </View>
             </View>
 
+            {/* Display Mode */}
+            <View style={styles.settingSection}>
+              <Text style={styles.settingLabel}>Display Mode:</Text>
+              <View style={styles.optionButtons}>
+                <Pressable
+                  style={[styles.optionButton, !showImageMode && styles.optionButtonActive]}
+                  onPress={() => setShowImageMode(false)}
+                >
+                  <Text style={[styles.optionText, !showImageMode && styles.optionTextActive]}>Text</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.optionButton, showImageMode && styles.optionButtonActive]}
+                  onPress={() => setShowImageMode(true)}
+                >
+                  <Text style={[styles.optionText, showImageMode && styles.optionTextActive]}>Image</Text>
+                </Pressable>
+              </View>
+            </View>
+
             {/* Close Button */}
             <Pressable
               style={styles.closeButton}
@@ -546,27 +550,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  imageToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#6200ee',
-  },
-  imageToggleActive: {
-    backgroundColor: '#6200ee',
-  },
-  toggleText: {
-    fontSize: 14,
-    color: '#6200ee',
-    fontWeight: '500',
-  },
-  toggleTextActive: {
-    color: '#fff',
-  },
+
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#fff',
