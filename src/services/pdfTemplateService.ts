@@ -289,7 +289,15 @@ export const generateChangelogHTML = (
     <div class="content">
       ${
         changelog.description
-          ? `<div class="description">${changelog.description}</div>`
+          ? `
+          <div class="section">
+            <h2 class="section-title" style="color: #6200ee; border-bottom-color: #6200ee;">
+              <span class="icon">📝</span>
+              General Notes
+            </h2>
+            <div class="description">${changelog.description}</div>
+          </div>
+          `
           : ''
       }
       
