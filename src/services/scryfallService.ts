@@ -58,22 +58,43 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard |
 export const parseCardType = (typeLine: string): string => {
   if (!typeLine) return 'Other';
   
-  // Special case: If a card is both Land and another type (e.g., Urza's Saga is "Enchantment Land"),
-  // prioritize Land for categorization
-  if (typeLine.includes('Land')) {
+  // MTG Type System:
+  // Type line format: [Supertypes] Types [— Subtypes]
+  // Supertypes: Basic, Legendary, Snow, World
+  // Types: Artifact, Enchantment, Creature, Land, Instant, Sorcery, Planeswalker, Battle, Kindred
+  // Subtypes: Everything after the hyphen
+  
+  // For MDFCs, the type line is "Type1 // Type2" - extract the first face type
+  const firstFaceType = typeLine.split('//')[0].trim();
+  
+  // Remove subtypes (everything after hyphen)
+  const typesPart = firstFaceType.split('—')[0].trim();
+  
+  // Define all valid types
+  const validTypes = ['Planeswalker', 'Creature', 'Sorcery', 'Instant', 'Artifact', 'Enchantment', 'Battle', 'Land', 'Kindred'];
+  
+  // Extract all types from the types part (skip supertypes)
+  const supertypes = ['Basic', 'Legendary', 'Snow', 'World'];
+  const words = typesPart.split(/\s+/);
+  const types = words.filter(word => validTypes.includes(word));
+  
+  if (types.length === 0) return 'Other';
+  
+  // If Kindred is present, use the other type
+  if (types.includes('Kindred') && types.length > 1) {
+    const nonKindredTypes = types.filter(t => t !== 'Kindred');
+    return nonKindredTypes[0];
+  }
+  
+  // Special case: For multi-type cards (not MDFCs), prioritize Land
+  // Example: "Enchantment Land" (Urza's Saga) should be categorized as Land
+  // But "Instant // Land" (MDFC) should be categorized as Instant (already handled by firstFaceType)
+  if (types.includes('Land') && types.length > 1) {
     return 'Land';
   }
   
-  // Check other types in priority order
-  const types = ['Creature', 'Instant', 'Sorcery', 'Enchantment', 'Artifact', 'Planeswalker', 'Battle'];
-  
-  for (const type of types) {
-    if (typeLine.includes(type)) {
-      return type;
-    }
-  }
-  
-  return 'Other';
+  // Return the first type (primary type)
+  return types[0];
 };
 
 export const searchCards = async (query: string): Promise<any[]> => {

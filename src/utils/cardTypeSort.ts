@@ -1,14 +1,14 @@
 import { CardEntity, CardType } from '../types';
 
 const CARD_TYPE_ORDER: Record<CardType, number> = {
-  [CardType.Creature]: 1,
-  [CardType.Instant]: 2,
+  [CardType.Planeswalker]: 1,
+  [CardType.Creature]: 2,
   [CardType.Sorcery]: 3,
-  [CardType.Enchantment]: 4,
+  [CardType.Instant]: 4,
   [CardType.Artifact]: 5,
-  [CardType.Land]: 6,
-  [CardType.Planeswalker]: 7,
-  [CardType.Battle]: 8,
+  [CardType.Enchantment]: 6,
+  [CardType.Battle]: 7,
+  [CardType.Land]: 8,
   [CardType.Other]: 9,
 };
 

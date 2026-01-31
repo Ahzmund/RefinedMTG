@@ -188,8 +188,11 @@ const DeckDetailScreen: React.FC = () => {
       const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
       
       if (deckCard?.card) {
-        // Check if we need to fetch details from Scryfall (missing oracle text)
-        if (!deckCard.card.oracleText) {
+        // Check if we need to fetch details from Scryfall
+        // - Missing oracle text, OR
+        // - MDFC card (has // in name) - need cardFaces which isn't stored in DB
+        const isMDFC = deckCard.card.name.includes('//');
+        if (!deckCard.card.oracleText || isMDFC) {
           console.log(`Fetching details for ${deckCard.card.name} from Scryfall...`);
           const { fetchAndUpdateCardDetails } = await import('../database/cardService');
           const updatedCard = await fetchAndUpdateCardDetails(deckCard.card.id, deckCard.card.name);
