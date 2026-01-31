@@ -86,13 +86,14 @@ export const getOrCreateCard = async (cardInput: string | { name: string; typeLi
     const largeImageUrl = scryfallCard.image_uris?.large || scryfallCard.image_uris?.normal;
     
     await db.runAsync(
-      `INSERT INTO cards (id, scryfall_id, name, mana_cost, type_line, card_type, image_uri, oracle_text, power, toughness, loyalty, defense, large_image_url, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO cards (id, scryfall_id, name, mana_cost, cmc, type_line, card_type, image_uri, oracle_text, power, toughness, loyalty, defense, large_image_url, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         scryfallCard.id,
         scryfallCard.name, // Use Scryfall's actual name (includes // for MDFC, actual name for variants)
         scryfallCard.mana_cost || null,
+        scryfallCard.cmc || 0,
         scryfallCard.type_line || null,
         cardType,
         imageUri || null,

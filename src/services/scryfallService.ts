@@ -40,6 +40,7 @@ export const searchCardByName = async (cardName: string): Promise<ScryfallCard |
       id: data.id,
       name: data.name,
       mana_cost: manaCost,
+      cmc: data.cmc || 0,
       type_line: data.type_line,
       oracle_text: data.oracle_text || frontFace?.oracle_text || null,
       power: data.power || frontFace?.power || null,
@@ -84,6 +85,12 @@ export const parseCardType = (typeLine: string): string => {
   if (types.includes('Kindred') && types.length > 1) {
     const nonKindredTypes = types.filter(t => t !== 'Kindred');
     return nonKindredTypes[0];
+  }
+  
+  // Special priority: Planeswalker is ALWAYS primary when present
+  // Example: "Legendary Artifact Planeswalker - Equipment" (The Aetherspark) → Planeswalker
+  if (types.includes('Planeswalker')) {
+    return 'Planeswalker';
   }
   
   // Special case: For multi-type cards (not MDFCs), prioritize Land

@@ -1,23 +1,52 @@
 import React from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
-import { CardEntity } from '../types';
+import { CardEntity, CardType } from '../types';
 import { cardTypeToSectionData } from '../utils/cardTypeSort';
+import { manaValueToSectionData } from '../utils/manaValueSort';
 import ManaSymbols from './ManaSymbols';
 
 interface CardSectionListProps {
   cards: CardEntity[];
+  categorizeBy?: 'type' | 'manaValue';
+  sortBy?: 'alphabetical' | 'manaValue';
   onCardPress?: (card: CardEntity) => void;
   onCardLongPress?: (card: CardEntity) => void;
 }
 
-const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, onCardLongPress }) => {
+const CardSectionList: React.FC<CardSectionListProps> = ({ 
+  cards, 
+  categorizeBy = 'type', 
+  sortBy = 'alphabetical',
+  onCardPress, 
+  onCardLongPress 
+}) => {
   // Separate commanders, sideboard, and mainboard cards
   const commanders = cards?.filter(card => card.isCommander === true) ?? [];
   const sideboardCards = cards?.filter(card => card.isSideboard === true && card.isCommander !== true) ?? [];
   const mainboardCards = cards?.filter(card => card.isCommander !== true && card.isSideboard !== true) ?? [];
   
-  // Get sections for mainboard cards
-  const mainboardSections = cardTypeToSectionData(mainboardCards);
+  // Get sections for mainboard cards based on categorization setting
+  let mainboardSections;
+  
+  if (categorizeBy === 'manaValue') {
+    // Separate lands from non-lands
+    const lands = mainboardCards.filter(card => card.cardType === CardType.Land);
+    const nonLands = mainboardCards.filter(card => card.cardType !== CardType.Land);
+    
+    // Organize non-lands by mana value
+    const manaValueSections = manaValueToSectionData(nonLands, sortBy);
+    
+    // Add lands section at the end (always sorted alphabetically)
+    if (lands.length > 0) {
+      const sortedLands = [...lands].sort((a, b) => a.name.localeCompare(b.name));
+      mainboardSections = [...manaValueSections, { title: 'Land', data: sortedLands }];
+    } else {
+      mainboardSections = manaValueSections;
+    }
+  } else {
+    // Organize by card type
+    mainboardSections = cardTypeToSectionData(mainboardCards, sortBy);
+  }
   
   // Sort sideboard alphabetically by name
   const sortedSideboardCards = [...sideboardCards].sort((a, b) => a.name.localeCompare(b.name));
@@ -30,16 +59,20 @@ const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, o
     sections.push({ title: 'Command Zone', data: commanders, isTopLevel: true });
   }
   
+  // Calculate total card counts
+  const mainboardCount = mainboardCards.reduce((sum, card) => sum + card.quantity, 0);
+  const sideboardCount = sideboardCards.reduce((sum, card) => sum + card.quantity, 0);
+  
   // Add Mainboard parent label if mainboard cards exist
   if (mainboardCards.length > 0) {
-    sections.push({ title: 'Mainboard', data: [], isTopLevel: true, isMainboardHeader: true });
+    sections.push({ title: 'Mainboard', data: [], isTopLevel: true, isMainboardHeader: true, cardCount: mainboardCount });
     // Add mainboard type subsections with indentation
     sections = [...sections, ...mainboardSections.map(section => ({ ...section, isSubSection: true }))];
   }
   
   // Add Sideboard section if sideboard cards exist (alphabetical, not organized by type)
   if (sortedSideboardCards.length > 0) {
-    sections.push({ title: 'Sideboard', data: sortedSideboardCards, isTopLevel: true });
+    sections.push({ title: 'Sideboard', data: sortedSideboardCards, isTopLevel: true, cardCount: sideboardCount });
   }
 
   const renderCard = ({ item }: { item: CardEntity }) => (
@@ -63,19 +96,35 @@ const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, o
     </Pressable>
   );
 
-  const renderSectionHeader = ({ section }: { section: { title: string; isTopLevel?: boolean; isSubSection?: boolean; isMainboardHeader?: boolean } }) => {
-    // Don't render empty mainboard header (it's just a label)
+  const renderSectionHeader = ({ section }: { section: { title: string; isTopLevel?: boolean; isSubSection?: boolean; isMainboardHeader?: boolean; cardCount?: number } }) => {
+    // Render mainboard header with card count
     if (section.isMainboardHeader) {
       return (
         <View style={[styles.sectionHeader, styles.topLevelHeader]}>
           <Text style={[styles.sectionTitle, styles.topLevelTitle]}>{section.title}</Text>
+          {section.cardCount !== undefined && (
+            <Text style={styles.cardCount}>({section.cardCount})</Text>
+          )}
         </View>
       );
     }
     
+    // Render top-level sections (Command Zone, Sideboard) with optional card count
+    if (section.isTopLevel) {
+      return (
+        <View style={[styles.sectionHeader, styles.topLevelHeader]}>
+          <Text style={[styles.sectionTitle, styles.topLevelTitle]}>{section.title}</Text>
+          {section.cardCount !== undefined && (
+            <Text style={styles.cardCount}>({section.cardCount})</Text>
+          )}
+        </View>
+      );
+    }
+    
+    // Render subsections (card type sections)
     return (
-      <View style={[styles.sectionHeader, section.isTopLevel && styles.topLevelHeader, section.isSubSection && styles.subSectionHeader]}>
-        <Text style={[styles.sectionTitle, section.isTopLevel && styles.topLevelTitle, section.isSubSection && styles.subSectionTitle]}>{section.title}</Text>
+      <View style={[styles.sectionHeader, section.isSubSection && styles.subSectionHeader]}>
+        <Text style={[styles.sectionTitle, section.isSubSection && styles.subSectionTitle]}>{section.title}</Text>
       </View>
     );
   };
@@ -110,6 +159,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   topLevelHeader: {
     backgroundColor: '#e8e0f5',
@@ -197,6 +249,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#999',
+  },
+  cardCount: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4a148c',
   },
 });
 

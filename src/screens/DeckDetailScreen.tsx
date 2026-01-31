@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  Modal,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,6 +36,9 @@ const DeckDetailScreen: React.FC = () => {
   const [isLoadingCardDetails, setIsLoadingCardDetails] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [categorizeBy, setCategorizeBy] = useState<'type' | 'manaValue'>('type');
+  const [sortBy, setSortBy] = useState<'alphabetical' | 'manaValue'>('alphabetical');
   const { data: deck, isLoading, error, refetch } = useDeck(deckId);
 
   // Refetch deck details when screen comes into focus
@@ -284,6 +288,7 @@ const DeckDetailScreen: React.FC = () => {
     name: deckCard.card?.name || 'Unknown Card',
     typeLine: deckCard.card?.typeLine || '',
     manaCost: deckCard.card?.manaCost || '',
+    cmc: deckCard.card?.cmc || 0,
     quantity: deckCard.quantity,
     isCommander: deckCard.isCommander,
     isSideboard: deckCard.isSideboard,
@@ -321,6 +326,15 @@ const DeckDetailScreen: React.FC = () => {
               <Ionicons name="copy-outline" size={20} color="#6200ee" />
               <Text style={styles.moxfieldText}>Copy</Text>
             </Pressable>
+            <Pressable
+              style={styles.moxfieldLink}
+              onPress={() => setShowSettingsModal(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Organization settings"
+            >
+              <Ionicons name="options-outline" size={20} color="#6200ee" />
+              <Text style={styles.moxfieldText}>Settings</Text>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -347,7 +361,13 @@ const DeckDetailScreen: React.FC = () => {
 
       {/* Tab content */}
       {activeTab === 'current' ? (
-        <CardSectionList cards={cardEntities} onCardPress={handleCardPress} onCardLongPress={handleCardLongPress} />
+        <CardSectionList 
+          cards={cardEntities} 
+          categorizeBy={categorizeBy}
+          sortBy={sortBy}
+          onCardPress={handleCardPress} 
+          onCardLongPress={handleCardLongPress} 
+        />
       ) : (
         <ScrollView style={styles.historyContainer}>
           {(deck.changelogs?.length || 0) === 0 ? (
@@ -399,6 +419,69 @@ const DeckDetailScreen: React.FC = () => {
         message="Copied!"
         onDismiss={() => setShowToast(false)}
       />
+
+      {/* Organization Settings Modal */}
+      <Modal
+        visible={showSettingsModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowSettingsModal(false)}
+        >
+          <Pressable style={styles.settingsModal} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.settingsTitle}>Organization Settings</Text>
+            
+            {/* Categorize By */}
+            <View style={styles.settingSection}>
+              <Text style={styles.settingLabel}>Categorize By:</Text>
+              <View style={styles.optionButtons}>
+                <Pressable
+                  style={[styles.optionButton, categorizeBy === 'type' && styles.optionButtonActive]}
+                  onPress={() => setCategorizeBy('type')}
+                >
+                  <Text style={[styles.optionText, categorizeBy === 'type' && styles.optionTextActive]}>Type</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.optionButton, categorizeBy === 'manaValue' && styles.optionButtonActive]}
+                  onPress={() => setCategorizeBy('manaValue')}
+                >
+                  <Text style={[styles.optionText, categorizeBy === 'manaValue' && styles.optionTextActive]}>Mana Value</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Sort By */}
+            <View style={styles.settingSection}>
+              <Text style={styles.settingLabel}>Sort By:</Text>
+              <View style={styles.optionButtons}>
+                <Pressable
+                  style={[styles.optionButton, sortBy === 'alphabetical' && styles.optionButtonActive]}
+                  onPress={() => setSortBy('alphabetical')}
+                >
+                  <Text style={[styles.optionText, sortBy === 'alphabetical' && styles.optionTextActive]}>Alphabetically</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.optionButton, sortBy === 'manaValue' && styles.optionButtonActive]}
+                  onPress={() => setSortBy('manaValue')}
+                >
+                  <Text style={[styles.optionText, sortBy === 'manaValue' && styles.optionTextActive]}>Mana Value</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Close Button */}
+            <Pressable
+              style={styles.closeButton}
+              onPress={() => setShowSettingsModal(false)}
+            >
+              <Text style={styles.closeButtonText}>Done</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -529,3 +612,76 @@ const styles = StyleSheet.create({
 });
 
 export default DeckDetailScreen;
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsModal: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  settingsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  settingSection: {
+    marginBottom: 20,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  optionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  optionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  optionButtonActive: {
+    borderColor: '#6200ee',
+    backgroundColor: '#f3e5f5',
+  },
+  optionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  optionTextActive: {
+    color: '#6200ee',
+    fontWeight: '600',
+  },
+  closeButton: {
+    backgroundColor: '#6200ee',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },

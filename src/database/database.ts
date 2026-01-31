@@ -46,6 +46,12 @@ const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
       await db.execAsync('ALTER TABLE cards ADD COLUMN large_image_url TEXT');
     }
     
+    // Add cmc column if it doesn't exist
+    if (!columnNames.includes('cmc')) {
+      console.log('Adding cmc column to cards table...');
+      await db.execAsync('ALTER TABLE cards ADD COLUMN cmc REAL');
+    }
+    
     // Check if is_sideboard column exists in deck_cards table
     const deckCardsInfo = await db.getAllAsync<any>('PRAGMA table_info(deck_cards)');
     const deckCardsColumns = deckCardsInfo.map((col: any) => col.name);

@@ -83,6 +83,7 @@ export interface ScryfallCard {
   id: string;
   name: string;
   mana_cost?: string;
+  cmc?: number;
   type_line?: string;
   oracle_text?: string;
   power?: string;
@@ -155,6 +156,7 @@ export interface CardEntity {
   name: string;
   typeLine: string;
   manaCost: string;
+  cmc?: number;
   quantity: number;
   cardType: CardType;
   isCommander?: boolean;
