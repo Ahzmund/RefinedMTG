@@ -1,8 +1,8 @@
-import { Changelog } from '../types';
+import { ChangeHistoryItem } from '../types';
 
 export const generateChangelogHTML = (
   deckName: string,
-  changelog: Changelog
+  changelog: ChangeHistoryItem
 ): string => {
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -19,12 +19,12 @@ export const generateChangelogHTML = (
           (cc) => `
           <div class="card-item added">
             <div class="card-header">
-              <span class="card-name">${cc.card.name}</span>
+              <span class="card-name">${cc.name}</span>
               <span class="card-quantity">×${cc.quantity}</span>
             </div>
             <div class="card-details">
-              <span class="card-type">${cc.card.typeLine}</span>
-              ${cc.card.manaCost ? `<span class="mana-cost">${cc.card.manaCost}</span>` : ''}
+              <span class="card-type">${cc.typeLine || 'Unknown'}</span>
+              ${cc.manaCost ? `<span class="mana-cost">${cc.manaCost}</span>` : ''}
             </div>
             ${cc.reasoning ? `<div class="reasoning">${cc.reasoning}</div>` : ''}
           </div>
@@ -39,12 +39,12 @@ export const generateChangelogHTML = (
           (cc) => `
           <div class="card-item removed">
             <div class="card-header">
-              <span class="card-name">${cc.card.name}</span>
+              <span class="card-name">${cc.name}</span>
               <span class="card-quantity">×${cc.quantity}</span>
             </div>
             <div class="card-details">
-              <span class="card-type">${cc.card.typeLine}</span>
-              ${cc.card.manaCost ? `<span class="mana-cost">${cc.card.manaCost}</span>` : ''}
+              <span class="card-type">${cc.typeLine || 'Unknown'}</span>
+              ${cc.manaCost ? `<span class="mana-cost">${cc.manaCost}</span>` : ''}
             </div>
             ${cc.reasoning ? `<div class="reasoning">${cc.reasoning}</div>` : ''}
           </div>

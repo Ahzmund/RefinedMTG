@@ -1,11 +1,11 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Changelog } from '../types';
+import { ChangeHistoryItem } from '../types';
 import { generateChangelogHTML } from './pdfTemplateService';
 
 export interface ExportPDFOptions {
   deckName: string;
-  changelog: Changelog;
+  changelog: ChangeHistoryItem;
 }
 
 export const exportChangelogToPDF = async ({
