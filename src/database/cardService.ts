@@ -56,7 +56,28 @@ export const getOrCreateCard = async (cardInput: string | { name: string; typeLi
       return null; // Card not found
     }
 
-    // Save to database
+    // Check if card exists with the Scryfall-returned name (handles MDFC and variants)
+    // For example: searching "Sink into Stupor" returns "Sink into Stupor // Soporific Springs"
+    // Or searching "Merciless Poisoning" returns "Toxic Deluge"
+    const existingCardByActualName = await db.getFirstAsync<any>(
+      'SELECT * FROM cards WHERE name = ? COLLATE NOCASE',
+      [scryfallCard.name]
+    );
+
+    if (existingCardByActualName) {
+      return {
+        id: existingCardByActualName.id,
+        scryfallId: existingCardByActualName.scryfall_id,
+        name: existingCardByActualName.name,
+        manaCost: existingCardByActualName.mana_cost,
+        typeLine: existingCardByActualName.type_line,
+        cardType: existingCardByActualName.card_type,
+        imageUri: existingCardByActualName.image_uri,
+        createdAt: existingCardByActualName.created_at,
+      };
+    }
+
+    // Save to database with Scryfall's actual card name
     const id = uuid.v4() as string;
     const now = Date.now();
     const cardType = parseCardType(scryfallCard.type_line || '');
@@ -70,7 +91,7 @@ export const getOrCreateCard = async (cardInput: string | { name: string; typeLi
       [
         id,
         scryfallCard.id,
-        scryfallCard.name,
+        scryfallCard.name, // Use Scryfall's actual name (includes // for MDFC, actual name for variants)
         scryfallCard.mana_cost || null,
         scryfallCard.type_line || null,
         cardType,
@@ -88,7 +109,7 @@ export const getOrCreateCard = async (cardInput: string | { name: string; typeLi
     return {
       id,
       scryfallId: scryfallCard.id,
-      name: scryfallCard.name,
+      name: scryfallCard.name, // Return Scryfall's actual name
       manaCost: scryfallCard.mana_cost,
       typeLine: scryfallCard.type_line,
       cardType,

@@ -123,19 +123,20 @@ const importCardsToNewDeck = async (
 
 // Helper function to add commanders to a deck
 const addCommandersToDeck = async (deckId: string, commanderNames: string[]): Promise<void> => {
-  const { searchCardByName } = await import('./scryfallService');
-  
   for (const commanderName of commanderNames) {
+    if (!commanderName || commanderName.trim() === '') {
+      continue; // Skip empty commander names
+    }
+    
     try {
-      // Fetch card from Scryfall
-      const scryfallCard = await searchCardByName(commanderName);
+      // Create/get card in database (this will fetch from Scryfall if needed)
+      const card = await getOrCreateCard(commanderName.trim());
       
-      if (scryfallCard) {
-        // Create/get card in database
-        const cardId = await getOrCreateCard(scryfallCard);
-        
+      if (card) {
         // Add to deck with isCommander = true
-        await addCardToDeck(deckId, cardId, 1, true);
+        await addCardToDeck(deckId, card.id, 1, true);
+      } else {
+        console.warn(`Commander not found: ${commanderName}`);
       }
     } catch (error) {
       console.error(`Failed to add commander ${commanderName}:`, error);
