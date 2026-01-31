@@ -43,9 +43,9 @@ export const parseDecklist = (decklist: string): ParsedDecklist => {
       continue;
     }
 
-    // Check for SIDEBOARD section
+    // Check for SIDEBOARD section (case-insensitive, anywhere in line)
     const lowerTrimmed = trimmed.toLowerCase();
-    if (lowerTrimmed === 'sideboard' || lowerTrimmed === 'sideboard:' || lowerTrimmed === 'side board' || lowerTrimmed === 'side board:') {
+    if (lowerTrimmed.includes('sideboard')) {
       inSideboard = true;
       continue;
     }

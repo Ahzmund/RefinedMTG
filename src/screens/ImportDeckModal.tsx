@@ -40,6 +40,9 @@ const ImportDeckModal: React.FC = () => {
   const [showMoxfieldWebView, setShowMoxfieldWebView] = useState(false);
   const [commander1, setCommander1] = useState('');
   const [commander2, setCommander2] = useState('');
+  const [showSideboardConfirm, setShowSideboardConfirm] = useState(false);
+  const [parsedSideboard, setParsedSideboard] = useState<string>('');
+  const [editedSideboard, setEditedSideboard] = useState<string>('');
   
   const { data: folders } = useFolders();
 
@@ -71,17 +74,24 @@ const ImportDeckModal: React.FC = () => {
           return;
         }
 
-        const commanders = [commander1, commander2].filter(c => c.trim());
-        const result = await importDeckFromDecklist(deckName, decklist, selectedFolderId || undefined, commanders);
-        queryClient.invalidateQueries({ queryKey: ['decks'] });
+        // Check if sideboard is present
+        const { parseDecklist } = await import('../services/decklistParser');
+        const parsed = parseDecklist(decklist);
         
-        if (result.failedCards.length > 0) {
-          showToast(`Deck created! ${result.successCount} cards imported, ${result.failedCards.length} failed.`);
-        } else {
-          showToast(`Deck created! ${result.successCount} cards imported.`);
+        if (parsed.sideboard.length > 0) {
+          // Show sideboard confirmation dialog
+          const sideboardText = parsed.sideboard
+            .map(card => `${card.quantity} ${card.name}`)
+            .join('\n');
+          setParsedSideboard(sideboardText);
+          setEditedSideboard(sideboardText);
+          setShowSideboardConfirm(true);
+          setIsImporting(false);
+          return;
         }
-        
-        setTimeout(() => navigation.goBack(), 1500);
+
+        // No sideboard, proceed with import
+        await performDecklistImport(decklist);
       } else if (method === 'moxfield') {
         if (!moxfieldUrl.trim()) {
           Alert.alert('Error', 'Please enter a Moxfield URL');
@@ -134,6 +144,45 @@ const ImportDeckModal: React.FC = () => {
     setShowMoxfieldWebView(false);
     setIsImporting(false);
     Alert.alert('Moxfield Import Failed', error);
+  };
+
+  const performDecklistImport = async (decklistText: string) => {
+    setIsImporting(true);
+    try {
+      const commanders = [commander1, commander2].filter(c => c.trim());
+      const result = await importDeckFromDecklist(deckName, decklistText, selectedFolderId || undefined, commanders);
+      queryClient.invalidateQueries({ queryKey: ['decks'] });
+      
+      if (result.failedCards.length > 0) {
+        showToast(`Deck created! ${result.successCount} cards imported, ${result.failedCards.length} failed.`);
+      } else {
+        showToast(`Deck created! ${result.successCount} cards imported.`);
+      }
+      
+      setTimeout(() => navigation.goBack(), 1500);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      Alert.alert('Error', error.message || 'Failed to create deck');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleSideboardConfirm = async () => {
+    setShowSideboardConfirm(false);
+    
+    // Reconstruct decklist with edited sideboard
+    const mainboardOnly = decklist.split(/sideboard/i)[0].trim();
+    const reconstructed = editedSideboard.trim() 
+      ? `${mainboardOnly}\n\nSIDEBOARD:\n${editedSideboard}`
+      : mainboardOnly;
+    
+    await performDecklistImport(reconstructed);
+  };
+
+  const handleSideboardCancel = () => {
+    setShowSideboardConfirm(false);
+    setIsImporting(false);
   };
 
   // If showing Moxfield WebView, render that instead
@@ -319,11 +368,12 @@ const ImportDeckModal: React.FC = () => {
           {method === 'decklist' && (
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Decklist</Text>
+              <Text style={styles.helperText}>Don't include commanders here - add them in Command Zone above</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={decklist}
                 onChangeText={setDecklist}
-                placeholder="1 Lightning Bolt&#10;1 Sol Ring&#10;..."
+                placeholder="1 Lightning Bolt&#10;1 Sol Ring&#10;...&#10;&#10;SIDEBOARD:&#10;1 Rest in Peace&#10;1 Grafdigger's Cage"
                 placeholderTextColor="#999"
                 multiline
                 numberOfLines={10}
@@ -352,6 +402,44 @@ const ImportDeckModal: React.FC = () => {
         message={toastMessage}
         onDismiss={() => setToastVisible(false)}
       />
+
+      {/* Sideboard Confirmation Modal */}
+      {showSideboardConfirm && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sideboard Detected</Text>
+              <Ionicons name="information-circle" size={24} color="#6200ee" />
+            </View>
+            <Text style={styles.modalDescription}>
+              We found a sideboard in your decklist. Please review and confirm the cards below:
+            </Text>
+            <TextInput
+              style={[styles.input, styles.textArea, styles.modalTextArea]}
+              value={editedSideboard}
+              onChangeText={setEditedSideboard}
+              multiline
+              numberOfLines={8}
+              textAlignVertical="top"
+              placeholder="No sideboard cards"
+            />
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleSideboardCancel}
+              >
+                <Text style={styles.modalButtonTextSecondary}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleSideboardConfirm}
+              >
+                <Text style={styles.modalButtonTextPrimary}>Confirm & Import</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -475,6 +563,79 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+    maxWidth: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  modalTextArea: {
+    minHeight: 120,
+    maxHeight: 200,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#6200ee',
+  },
+  modalButtonSecondary: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  modalButtonTextPrimary: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonTextSecondary: {
+    color: '#666',
     fontSize: 16,
     fontWeight: '600',
   },

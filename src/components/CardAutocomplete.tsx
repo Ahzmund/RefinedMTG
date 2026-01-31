@@ -21,11 +21,13 @@ interface CardSuggestion {
 }
 
 interface CardAutocompleteProps {
-  label: string;
+  label?: string;
   placeholder: string;
   deckCards?: CardSuggestion[]; // If provided, only show these cards (for removals)
   onSelectCard: (card: CardSuggestion) => void;
   disabled?: boolean;
+  value?: string; // External control of input value
+  onChangeText?: (text: string) => void; // External control of input changes
 }
 
 const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
@@ -34,8 +36,11 @@ const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
   deckCards,
   onSelectCard,
   disabled = false,
+  value,
+  onChangeText,
 }) => {
-  const [query, setQuery] = useState('');
+  const [internalQuery, setInternalQuery] = useState('');
+  const query = value !== undefined ? value : internalQuery;
   const [suggestions, setSuggestions] = useState<CardSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -82,7 +87,11 @@ const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
   }, [query, debouncedSearch]);
 
   const handleSelectCard = (card: CardSuggestion) => {
-    setQuery(card.name);
+    if (onChangeText) {
+      onChangeText(card.name);
+    } else {
+      setInternalQuery(card.name);
+    }
     setShowSuggestions(false);
     setSuggestions([]);
     onSelectCard(card);
@@ -108,15 +117,21 @@ const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
         style={[styles.input, disabled && styles.inputDisabled]}
         placeholder={placeholder}
         value={query}
         onChangeText={(text) => {
-          setQuery(text);
+          if (onChangeText) {
+            onChangeText(text);
+          } else {
+            setInternalQuery(text);
+          }
           if (text.length < 2) {
             setShowSuggestions(false);
+          } else {
+            setShowSuggestions(true);
           }
         }}
         autoCapitalize="words"
