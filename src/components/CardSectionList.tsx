@@ -19,6 +19,9 @@ const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, o
   // Get sections for mainboard cards
   const mainboardSections = cardTypeToSectionData(mainboardCards);
   
+  // Sort sideboard alphabetically by name
+  const sortedSideboardCards = [...sideboardCards].sort((a, b) => a.name.localeCompare(b.name));
+  
   // Build sections: Command Zone → Mainboard → Sideboard
   let sections = [];
   
@@ -30,9 +33,9 @@ const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, o
   // Add mainboard sections
   sections = [...sections, ...mainboardSections];
   
-  // Add Sideboard section if sideboard cards exist
-  if (sideboardCards.length > 0) {
-    sections.push({ title: 'Sideboard', data: sideboardCards });
+  // Add Sideboard section if sideboard cards exist (alphabetical, not organized by type)
+  if (sortedSideboardCards.length > 0) {
+    sections.push({ title: 'Sideboard', data: sortedSideboardCards });
   }
 
   const renderCard = ({ item }: { item: CardEntity }) => (

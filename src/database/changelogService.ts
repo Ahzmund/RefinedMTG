@@ -153,3 +153,77 @@ export const getChangelogsByDeck = async (deckId: string): Promise<Changelog[]> 
 
   return changelogs;
 };
+
+// Helper to get today's date at midnight (for grouping hot swaps)
+const getTodayMidnight = (): number => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now.getTime();
+};
+
+// Get or create today's hot swap changelog entry
+export const getOrCreateHotSwapChangelog = async (deckId: string): Promise<string> => {
+  const db = getDatabase();
+  const todayMidnight = getTodayMidnight();
+  
+  // Check if hot swap entry exists for today
+  const existing = await db.getFirstAsync<any>(
+    `SELECT id FROM changelogs 
+     WHERE deck_id = ? AND change_date >= ? AND description LIKE '%Hot Swaps%'
+     ORDER BY change_date DESC LIMIT 1`,
+    [deckId, todayMidnight]
+  );
+  
+  if (existing) {
+    return existing.id;
+  }
+  
+  // Create new hot swap entry
+  const id = uuid.v4() as string;
+  const now = Date.now();
+  const today = new Date().toLocaleDateString();
+  
+  await db.runAsync(
+    `INSERT INTO changelogs (id, deck_id, change_date, description, is_import_error, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, deckId, now, `${today} - Hot Swaps`, 0, now]
+  );
+  
+  return id;
+};
+
+// Add a hot swap action to today's changelog
+export const addHotSwapAction = async (
+  deckId: string,
+  cardId: string,
+  action: 'added' | 'removed' | 'commander_set' | 'commander_removed' | 'moved_to_sideboard' | 'moved_to_mainboard',
+  quantity: number = 1
+): Promise<void> => {
+  const db = getDatabase();
+  const changelogId = await getOrCreateHotSwapChangelog(deckId);
+  
+  // Map action to reasoning
+  const reasoningMap: Record<string, string> = {
+    'commander_set': 'Set as commander',
+    'commander_removed': 'Removed as commander',
+    'moved_to_sideboard': 'Moved to sideboard',
+    'moved_to_mainboard': 'Moved to mainboard',
+  };
+  
+  const reasoning = reasoningMap[action] || undefined;
+  const changelogAction = action.includes('removed') || action === 'moved_to_sideboard' ? 'removed' : 'added';
+  
+  const id = uuid.v4() as string;
+  await db.runAsync(
+    `INSERT INTO changelog_cards (id, changelog_id, card_id, action, quantity, reasoning)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, changelogId, cardId, changelogAction, quantity, reasoning || null]
+  );
+  
+  // Update deck's updated_at
+  const now = Date.now();
+  await db.runAsync(
+    'UPDATE decks SET updated_at = ? WHERE id = ?',
+    [now, deckId]
+  );
+};

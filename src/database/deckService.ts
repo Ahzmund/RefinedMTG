@@ -383,3 +383,24 @@ export const toggleCommander = async (deckId: string, deckCardId: string, isComm
     throw error;
   }
 };
+
+export const toggleSideboard = async (deckId: string, deckCardId: string, isSideboard: boolean): Promise<void> => {
+  try {
+    const db = getDatabase();
+    
+    await db.runAsync(
+      'UPDATE deck_cards SET is_sideboard = ? WHERE id = ?',
+      [isSideboard ? 1 : 0, deckCardId]
+    );
+    
+    // Update deck's updated_at timestamp
+    const now = Date.now();
+    await db.runAsync(
+      'UPDATE decks SET updated_at = ? WHERE id = ?',
+      [now, deckId]
+    );
+  } catch (error) {
+    console.error('Error in toggleSideboard:', error);
+    throw error;
+  }
+};

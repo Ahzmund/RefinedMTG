@@ -133,6 +133,7 @@ export interface CardEntity {
   quantity: number;
   cardType: CardType;
   isCommander?: boolean;
+  isSideboard?: boolean;
 }
 
 export interface CardDetails {

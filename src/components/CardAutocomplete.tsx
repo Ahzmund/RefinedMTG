@@ -44,6 +44,7 @@ const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
   const [suggestions, setSuggestions] = useState<CardSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [justSelected, setJustSelected] = useState(false);
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -77,6 +78,12 @@ const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
   );
 
   useEffect(() => {
+    if (justSelected) {
+      // Don't show suggestions immediately after selection
+      setJustSelected(false);
+      return;
+    }
+    
     if (query.length >= 2) {
       debouncedSearch(query);
       setShowSuggestions(true);
@@ -84,9 +91,10 @@ const CardAutocomplete: React.FC<CardAutocompleteProps> = ({
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [query, debouncedSearch]);
+  }, [query, debouncedSearch, justSelected]);
 
   const handleSelectCard = (card: CardSuggestion) => {
+    setJustSelected(true);
     if (onChangeText) {
       onChangeText(card.name);
     } else {

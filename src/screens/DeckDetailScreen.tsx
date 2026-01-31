@@ -92,62 +92,91 @@ const DeckDetailScreen: React.FC = () => {
   const handleCardLongPress = async (card: CardEntity) => {
     // Count current commanders
     const commanderCount = deck?.cards.filter(dc => dc.isCommander).length || 0;
+    const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
     
+    if (!deckCard) return;
+    
+    // Build action sheet options
+    const options: any[] = [];
+    
+    // Commander options
     if (card.isCommander) {
-      // Show "Remove as Commander" option
-      Alert.alert(
-        'Commander Options',
-        `Remove ${card.name} as commander?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove as Commander',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                const { toggleCommander } = await import('../database/deckService');
-                const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
-                if (deckCard) {
-                  await toggleCommander(deckId, deckCard.id, false);
-                  refetch();
-                }
-              } catch (error) {
-                console.error('Error removing commander:', error);
-                Alert.alert('Error', 'Failed to remove commander');
-              }
-            },
-          },
-        ]
-      );
+      options.push({
+        text: 'Remove as Commander',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const { toggleCommander } = await import('../database/deckService');
+            const { addHotSwapAction } = await import('../database/changelogService');
+            await toggleCommander(deckId, deckCard.id, false);
+            await addHotSwapAction(deckId, deckCard.cardId, 'commander_removed');
+            refetch();
+          } catch (error) {
+            console.error('Error removing commander:', error);
+            Alert.alert('Error', 'Failed to remove commander');
+          }
+        },
+      });
     } else if (commanderCount < 2) {
-      // Show "Set as Commander" option (only if < 2 commanders)
-      Alert.alert(
-        'Commander Options',
-        `Set ${card.name} as commander?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Set as Commander',
-            onPress: async () => {
-              try {
-                const { toggleCommander } = await import('../database/deckService');
-                const deckCard = deck?.cards.find(dc => dc.card?.name === card.name);
-                if (deckCard) {
-                  await toggleCommander(deckId, deckCard.id, true);
-                  refetch();
-                }
-              } catch (error) {
-                console.error('Error setting commander:', error);
-                Alert.alert('Error', 'Failed to set commander');
-              }
-            },
-          },
-        ]
-      );
-    } else {
-      // Already have 2 commanders
-      Alert.alert('Maximum Commanders', 'You can only have up to 2 commanders in a deck.');
+      options.push({
+        text: 'Set as Commander',
+        onPress: async () => {
+          try {
+            const { toggleCommander } = await import('../database/deckService');
+            const { addHotSwapAction } = await import('../database/changelogService');
+            await toggleCommander(deckId, deckCard.id, true);
+            await addHotSwapAction(deckId, deckCard.cardId, 'commander_set');
+            refetch();
+          } catch (error) {
+            console.error('Error setting commander:', error);
+            Alert.alert('Error', 'Failed to set commander');
+          }
+        },
+      });
     }
+    
+    // Sideboard swap options (not for commanders)
+    if (!card.isCommander) {
+      if (card.isSideboard) {
+        options.push({
+          text: 'Move to Mainboard',
+          onPress: async () => {
+            try {
+              const { toggleSideboard } = await import('../database/deckService');
+              const { addHotSwapAction } = await import('../database/changelogService');
+              await toggleSideboard(deckId, deckCard.id, false);
+              await addHotSwapAction(deckId, deckCard.cardId, 'moved_to_mainboard', deckCard.quantity);
+              refetch();
+            } catch (error) {
+              console.error('Error moving to mainboard:', error);
+              Alert.alert('Error', 'Failed to move card to mainboard');
+            }
+          },
+        });
+      } else {
+        options.push({
+          text: 'Move to Sideboard',
+          onPress: async () => {
+            try {
+              const { toggleSideboard } = await import('../database/deckService');
+              const { addHotSwapAction } = await import('../database/changelogService');
+              await toggleSideboard(deckId, deckCard.id, true);
+              await addHotSwapAction(deckId, deckCard.cardId, 'moved_to_sideboard', deckCard.quantity);
+              refetch();
+            } catch (error) {
+              console.error('Error moving to sideboard:', error);
+              Alert.alert('Error', 'Failed to move card to sideboard');
+            }
+          },
+        });
+      }
+    }
+    
+    // Add cancel option
+    options.push({ text: 'Cancel', style: 'cancel' });
+    
+    // Show action sheet
+    Alert.alert('Card Options', `What would you like to do with ${card.name}?`, options);
   };
 
   const handleCardPress = async (card: CardEntity) => {
@@ -251,6 +280,7 @@ const DeckDetailScreen: React.FC = () => {
     manaCost: deckCard.card?.manaCost || '',
     quantity: deckCard.quantity,
     isCommander: deckCard.isCommander,
+    isSideboard: deckCard.isSideboard,
     cardType: deckCard.card?.cardType || 'Other',
   })) || [];
 
