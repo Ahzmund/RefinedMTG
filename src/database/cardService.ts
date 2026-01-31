@@ -253,6 +253,19 @@ export const fetchAndUpdateCardDetails = async (cardId: string, cardName: string
     
     if (!updatedCard) return null;
     
+    // Include card_faces from Scryfall response for MDFC cards
+    // (card_faces is not stored in database, only fetched from Scryfall)
+    const cardFaces = scryfallCard.card_faces ? scryfallCard.card_faces.map(face => ({
+      name: face.name,
+      typeLine: face.type_line || '',
+      manaCost: face.mana_cost,
+      oracleText: face.oracle_text,
+      power: face.power,
+      toughness: face.toughness,
+      loyalty: face.loyalty,
+      defense: face.defense,
+    })) : undefined;
+    
     return {
       id: updatedCard.id,
       scryfallId: updatedCard.scryfall_id,
@@ -268,6 +281,7 @@ export const fetchAndUpdateCardDetails = async (cardId: string, cardName: string
       defense: updatedCard.defense,
       largeImageUrl: updatedCard.large_image_url,
       createdAt: updatedCard.created_at,
+      cardFaces: cardFaces,
     };
   } catch (error) {
     console.error('Error in fetchAndUpdateCardDetails:', error);

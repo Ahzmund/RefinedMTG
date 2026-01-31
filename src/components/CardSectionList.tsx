@@ -27,15 +27,19 @@ const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, o
   
   // Add Command Zone section if commanders exist
   if (commanders.length > 0) {
-    sections.push({ title: 'Command Zone', data: commanders });
+    sections.push({ title: 'Command Zone', data: commanders, isTopLevel: true });
   }
   
-  // Add mainboard sections
-  sections = [...sections, ...mainboardSections];
+  // Add Mainboard parent label if mainboard cards exist
+  if (mainboardCards.length > 0) {
+    sections.push({ title: 'Mainboard', data: [], isTopLevel: true, isMainboardHeader: true });
+    // Add mainboard type subsections with indentation
+    sections = [...sections, ...mainboardSections.map(section => ({ ...section, isSubSection: true }))];
+  }
   
   // Add Sideboard section if sideboard cards exist (alphabetical, not organized by type)
   if (sortedSideboardCards.length > 0) {
-    sections.push({ title: 'Sideboard', data: sortedSideboardCards });
+    sections.push({ title: 'Sideboard', data: sortedSideboardCards, isTopLevel: true });
   }
 
   const renderCard = ({ item }: { item: CardEntity }) => (
@@ -59,11 +63,22 @@ const CardSectionList: React.FC<CardSectionListProps> = ({ cards, onCardPress, o
     </Pressable>
   );
 
-  const renderSectionHeader = ({ section }: { section: { title: string } }) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{section.title}</Text>
-    </View>
-  );
+  const renderSectionHeader = ({ section }: { section: { title: string; isTopLevel?: boolean; isSubSection?: boolean; isMainboardHeader?: boolean } }) => {
+    // Don't render empty mainboard header (it's just a label)
+    if (section.isMainboardHeader) {
+      return (
+        <View style={[styles.sectionHeader, styles.topLevelHeader]}>
+          <Text style={[styles.sectionTitle, styles.topLevelTitle]}>{section.title}</Text>
+        </View>
+      );
+    }
+    
+    return (
+      <View style={[styles.sectionHeader, section.isTopLevel && styles.topLevelHeader, section.isSubSection && styles.subSectionHeader]}>
+        <Text style={[styles.sectionTitle, section.isTopLevel && styles.topLevelTitle, section.isSubSection && styles.subSectionTitle]}>{section.title}</Text>
+      </View>
+    );
+  };
 
   if (cards.length === 0) {
     return (
@@ -96,10 +111,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  topLevelHeader: {
+    backgroundColor: '#e8e0f5',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#6200ee',
+  },
+  subSectionHeader: {
+    backgroundColor: '#f9f9f9',
+    paddingLeft: 32,
+    paddingVertical: 6,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#6200ee',
+  },
+  topLevelTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#4a148c',
+  },
+  subSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#7e57c2',
   },
   cardItem: {
     flexDirection: 'row',

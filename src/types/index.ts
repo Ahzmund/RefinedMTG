@@ -30,6 +30,16 @@ export interface Card {
   defense?: string;
   largeImageUrl?: string;
   createdAt: number;
+  cardFaces?: Array<{
+    name: string;
+    typeLine: string;
+    manaCost?: string;
+    oracleText?: string;
+    power?: string;
+    toughness?: string;
+    loyalty?: string;
+    defense?: string;
+  }>;
 }
 
 export interface DeckCard {

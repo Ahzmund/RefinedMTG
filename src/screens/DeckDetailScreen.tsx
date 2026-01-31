@@ -206,6 +206,7 @@ const DeckDetailScreen: React.FC = () => {
               loyalty: updatedCard.loyalty,
               defense: updatedCard.defense,
               largeImageUrl: updatedCard.largeImageUrl,
+              cardFaces: updatedCard.cardFaces,
             });
             // Refetch deck to update cache with new card details
             refetch();
@@ -221,6 +222,7 @@ const DeckDetailScreen: React.FC = () => {
               loyalty: deckCard.card.loyalty,
               defense: deckCard.card.defense,
               largeImageUrl: deckCard.card.largeImageUrl,
+              cardFaces: deckCard.card.cardFaces,
             });
           }
         } else {
@@ -235,6 +237,7 @@ const DeckDetailScreen: React.FC = () => {
             loyalty: deckCard.card.loyalty,
             defense: deckCard.card.defense,
             largeImageUrl: deckCard.card.largeImageUrl,
+            cardFaces: deckCard.card.cardFaces,
           });
         }
       } else {

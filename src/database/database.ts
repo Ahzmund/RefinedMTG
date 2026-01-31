@@ -55,6 +55,26 @@ const runMigrations = async (db: SQLite.SQLiteDatabase): Promise<void> => {
       await db.execAsync('ALTER TABLE deck_cards ADD COLUMN is_sideboard INTEGER DEFAULT 0');
     }
     
+    // Migration: Recalculate card_type for all cards to fix categorization
+    // This fixes issues like Urza's Saga (should be Land, not Enchantment)
+    // and ensures Planeswalkers are detected correctly
+    console.log('Recalculating card types for existing cards...');
+    const { parseCardType } = await import('../services/scryfallService');
+    const allCards = await db.getAllAsync<any>('SELECT id, type_line, card_type FROM cards WHERE type_line IS NOT NULL');
+    
+    let updatedCount = 0;
+    for (const card of allCards) {
+      const correctType = parseCardType(card.type_line);
+      if (card.card_type !== correctType) {
+        await db.runAsync('UPDATE cards SET card_type = ? WHERE id = ?', [correctType, card.id]);
+        updatedCount++;
+      }
+    }
+    
+    if (updatedCount > 0) {
+      console.log(`Updated card_type for ${updatedCount} cards`);
+    }
+    
     console.log('Migrations completed successfully');
   } catch (error) {
     console.error('Error running migrations:', error);

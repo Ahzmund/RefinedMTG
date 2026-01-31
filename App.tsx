@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, LogBox } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { initDatabase } from './src/database/database';
+
+// Suppress VirtualizedList warning (known React Native issue with nested lists)
+LogBox.ignoreLogs([
+  'VirtualizedLists should never be nested',
+]);
 
 // Screens
 import DeckListScreen from './src/screens/DeckListScreen';
