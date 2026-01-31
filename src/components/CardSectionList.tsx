@@ -66,8 +66,12 @@ const CardSectionList: React.FC<CardSectionListProps> = ({
   // Add Mainboard parent label if mainboard cards exist
   if (mainboardCards.length > 0) {
     sections.push({ title: 'Mainboard', data: [], isTopLevel: true, isMainboardHeader: true, cardCount: mainboardCount });
-    // Add mainboard type subsections with indentation
-    sections = [...sections, ...mainboardSections.map(section => ({ ...section, isSubSection: true }))];
+    // Add mainboard type subsections with indentation and card counts
+    sections = [...sections, ...mainboardSections.map(section => ({
+      ...section,
+      isSubSection: true,
+      cardCount: section.data.reduce((sum: number, card: CardEntity) => sum + card.quantity, 0)
+    }))];
   }
   
   // Add Sideboard section if sideboard cards exist (alphabetical, not organized by type)
@@ -125,6 +129,9 @@ const CardSectionList: React.FC<CardSectionListProps> = ({
     return (
       <View style={[styles.sectionHeader, section.isSubSection && styles.subSectionHeader]}>
         <Text style={[styles.sectionTitle, section.isSubSection && styles.subSectionTitle]}>{section.title}</Text>
+        {section.cardCount !== undefined && (
+          <Text style={[styles.cardCount, section.isSubSection && styles.subSectionCount]}>({section.cardCount})</Text>
+        )}
       </View>
     );
   };
@@ -254,6 +261,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#4a148c',
+  },
+  subSectionCount: {
+    fontSize: 14,
+    color: '#7e57c2',
   },
 });
 
